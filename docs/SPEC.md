@@ -23,7 +23,7 @@ Cada linha só é marcada quando o teste que a prova existe e passa.
 | [x] | Listar todos os pedidos e buscar por ID | `GET /api/orders`, `GET /api/orders/{id}` | `OrderApiTests` |
 | [x] | Persistência em SQLite ou similar | Postgres com Flyway | todos os testes HTTP, com Postgres real via Testcontainers |
 | [x] | React lista pedidos com status atual e cria pedido | Telas `/pedidos` e `/pedidos/novo` | `orders.test.tsx`, `new-order.test.tsx` |
-| [ ] | Repositório Git com histórico | Um PR por fase, commits por passo | histórico no GitHub |
+| [x] | Repositório Git com histórico | Um PR por fase, commits por passo | [PR #1](https://github.com/guilhermedkdk/order-tracker/pull/1), com merge commit |
 
 ## Papéis e visibilidade
 
