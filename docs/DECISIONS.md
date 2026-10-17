@@ -3,6 +3,15 @@
 Log append-only, com a entrada mais nova no topo. Cada entrada registra o que uma sessão futura faria
 errado sem ela.
 
+### 2026-10-17 - CEP preenche pelo evento do campo, não por observar o valor
+
+**Armadilha:** observar o CEP com `useWatch` dispararia o ViaCEP também quando a base de clientes
+preenche o endereço, trocando "Av. Paulista" do cadastro por "Avenida Paulista". E uma resposta lenta
+apagaria a rua que a pessoa digitou enquanto esperava.
+**Regra:** a busca roda no `onChange` do próprio campo de CEP, e a resposta só preenche campos vazios
+ou que ainda guardam o preenchimento anterior do CEP. Número e complemento nunca vêm do ViaCEP.
+**Onde:** `frontend/src/features/orders/useCepAutofill.ts`.
+
 ### 2026-10-17 - Base de clientes gravada por upsert nativo
 
 **Armadilha:** o jeito JPA de "buscar e salvar" o cliente corre: dois primeiros pedidos do mesmo

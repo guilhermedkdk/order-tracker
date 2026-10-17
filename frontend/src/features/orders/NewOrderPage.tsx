@@ -14,6 +14,7 @@ import { formatMoney } from '@/lib/format'
 import { showApiError } from '@/lib/form-errors'
 import { paymentMethodSchema, useCreateOrder } from './api'
 import { ItemsFields } from './ItemsFields'
+import { useCepAutofill } from './useCepAutofill'
 import { useCustomerAutofill } from './useCustomerAutofill'
 import { PAYMENT_LABEL } from './labels'
 import {
@@ -30,6 +31,14 @@ const CUSTOMER_HINT = {
   idle: undefined,
   found: 'Cliente encontrado: preenchemos os campos vazios com o último pedido.',
   new: 'Cliente novo neste restaurante.',
+} as const
+
+const CEP_HINT = {
+  idle: undefined,
+  loading: 'Buscando o endereço…',
+  found: undefined,
+  'not-found': 'CEP não encontrado. Preencha o endereço.',
+  failed: 'Não foi possível consultar o CEP. Preencha o endereço.',
 } as const
 
 export function NewOrderPage() {
@@ -56,6 +65,7 @@ export function NewOrderPage() {
   })
   const totals = previewTotals({ items, deliveryFee })
   const customerLookup = useCustomerAutofill(form)
+  const cep = useCepAutofill(form)
 
   const onSubmit = form.handleSubmit(async (body) => {
     try {
@@ -132,6 +142,7 @@ export function NewOrderPage() {
                 id="cep"
                 label="CEP"
                 error={errors.deliveryAddress?.cep}
+                description={CEP_HINT[cep.status]}
                 className="sm:col-span-2"
               >
                 <Input
@@ -139,7 +150,7 @@ export function NewOrderPage() {
                   inputMode="numeric"
                   placeholder="01310-100"
                   aria-invalid={!!errors.deliveryAddress?.cep}
-                  {...form.register('deliveryAddress.cep')}
+                  {...form.register('deliveryAddress.cep', { onChange: cep.onCepChange })}
                 />
               </Labeled>
               <Labeled

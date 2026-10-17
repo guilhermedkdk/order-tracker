@@ -12,8 +12,8 @@ pedidos e acompanham o status até a entrega.
   responde 404. Nenhum outro código decide visibilidade pelo papel.
 - Depois de criado, o pedido nunca lê a base de clientes; ele tem a própria cópia do cliente e do
   endereço.
-- O front fala só com `/api` na própria origem, sempre por `src/lib/http.ts`. O cookie de sessão depende
-  disso.
+- O front fala com a API só por `/api` na própria origem, sempre por `src/lib/http.ts`; o cookie de
+  sessão depende disso. A única outra chamada é o ViaCEP, em `src/lib/viacep.ts`.
 - Schema só muda por uma migration Flyway nova. Uma migration que já rodou nunca é editada.
 - Restaurar demonstração é a única exclusão do sistema.
 

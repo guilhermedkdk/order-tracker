@@ -10,4 +10,6 @@ export const server = setupServer(
   http.get('/api/customers', () =>
     HttpResponse.json({ detail: 'Cliente não encontrado.' }, { status: 404 }),
   ),
+  // Typing a CEP asks ViaCEP; by default no CEP exists.
+  http.get('https://viacep.com.br/ws/:cep/json/', () => HttpResponse.json({ erro: 'true' })),
 )
