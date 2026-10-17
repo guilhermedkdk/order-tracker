@@ -1,6 +1,7 @@
 package io.github.guilhermedkdk.ordertracker.auth;
 
 import java.util.List;
+import org.springdoc.core.utils.SpringDocUtils;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.MethodParameter;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
@@ -16,6 +17,11 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 // Lets any controller method take a CurrentUser parameter without touching the security context.
 @Configuration(proxyBeanMethods = false)
 class CurrentUserArgumentResolver implements HandlerMethodArgumentResolver, WebMvcConfigurer {
+
+    static {
+        // The value comes from the session, so the API docs must not list it as a request parameter.
+        SpringDocUtils.getConfig().addRequestWrapperToIgnore(CurrentUser.class);
+    }
 
     @Override
     public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {

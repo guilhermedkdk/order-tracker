@@ -20,6 +20,14 @@ management:
       exposure:
         include: health
 
+springdoc:
+  swagger-ui:
+    # Sends the XSRF-TOKEN cookie back as X-XSRF-TOKEN, which writes need.
+    csrf:
+      enabled: true
+    operations-sorter: method
+    tags-sorter: alpha
+
 app:
   auth:
     # Production sets APP_AUTH_JWT_SECRET; blank uses a random key per run.

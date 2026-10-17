@@ -2,6 +2,9 @@ package io.github.guilhermedkdk.ordertracker.order;
 
 import io.github.guilhermedkdk.ordertracker.auth.CurrentUser;
 import io.github.guilhermedkdk.ordertracker.shared.PageResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
@@ -29,6 +32,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@Tag(name = "Pedidos", description = "Pedidos dos restaurantes que o usuário enxerga.")
 @RequestMapping("/api/orders")
 class OrderController {
 
@@ -38,6 +42,12 @@ class OrderController {
         this.orders = orders;
     }
 
+    @Operation(
+            summary = "Cria um pedido",
+            description = "O total é calculado pela API. Telefone e CEP aceitam máscara.")
+    @ApiResponse(responseCode = "201", description = "Pedido criado, com status RECEBIDO")
+    @ApiResponse(responseCode = "400", description = "Dados inválidos, com o erro de cada campo")
+    @ApiResponse(responseCode = "404", description = "Restaurante não encontrado")
     @PostMapping
     ResponseEntity<OrderResponse> create(CurrentUser user, @Valid @RequestBody CreateOrderRequest request) {
         OrderView created = orders.create(user, request.toNewOrder());
@@ -46,6 +56,9 @@ class OrderController {
                 .body(OrderResponse.of(created));
     }
 
+    @Operation(summary = "Lista os pedidos visíveis")
+    @ApiResponse(responseCode = "200", description = "Do mais novo para o mais antigo, paginado (até 100 por página)")
+    @ApiResponse(responseCode = "404", description = "Filtro por restaurante fora do alcance")
     @GetMapping
     PageResponse<OrderSummaryResponse> list(
             CurrentUser user,
@@ -57,11 +70,21 @@ class OrderController {
                 .map(OrderSummaryResponse::of));
     }
 
+    @Operation(summary = "Busca um pedido pelo id")
+    @ApiResponse(responseCode = "200", description = "O pedido com itens e histórico")
+    @ApiResponse(responseCode = "404", description = "Pedido não encontrado")
     @GetMapping("/{id}")
     OrderResponse find(CurrentUser user, @PathVariable UUID id) {
         return OrderResponse.of(orders.find(user, id));
     }
 
+    @Operation(
+            summary = "Muda o status do pedido",
+            description = "Só aceita os status de allowedNextStatuses. Cancelar exige cancellationReason.")
+    @ApiResponse(responseCode = "200", description = "Status alterado e registrado no histórico")
+    @ApiResponse(responseCode = "400", description = "Motivo do cancelamento ausente ou fora de lugar")
+    @ApiResponse(responseCode = "404", description = "Pedido não encontrado")
+    @ApiResponse(responseCode = "409", description = "Transição inválida ou pedido alterado por outra pessoa")
     @PatchMapping("/{id}/status")
     OrderResponse changeStatus(
             CurrentUser user, @PathVariable UUID id, @Valid @RequestBody ChangeStatusRequest request) {

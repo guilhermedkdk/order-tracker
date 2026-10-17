@@ -2,6 +2,9 @@ package io.github.guilhermedkdk.ordertracker.restaurant;
 
 import io.github.guilhermedkdk.ordertracker.auth.CurrentUser;
 import io.github.guilhermedkdk.ordertracker.auth.UserDirectory;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -17,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@Tag(name = "Restaurantes", description = "Restaurantes que o usuário enxerga.")
 @RequestMapping("/api/restaurants")
 class RestaurantController {
 
@@ -28,6 +32,8 @@ class RestaurantController {
         this.users = users;
     }
 
+    @Operation(summary = "Lista os restaurantes visíveis")
+    @ApiResponse(responseCode = "200", description = "Do dono, os seus; do admin, todos, com o nome do dono")
     @GetMapping
     List<RestaurantResponse> list(CurrentUser user) {
         List<Restaurant> visible = restaurants.visible(restaurants.scopeOf(user));
@@ -38,6 +44,10 @@ class RestaurantController {
                 .toList();
     }
 
+    @Operation(summary = "Cria um restaurante do dono da sessão")
+    @ApiResponse(responseCode = "201", description = "Restaurante criado")
+    @ApiResponse(responseCode = "400", description = "Nome inválido")
+    @ApiResponse(responseCode = "403", description = "Admin não cria restaurantes")
     @PostMapping
     ResponseEntity<RestaurantResponse> create(CurrentUser user, @Valid @RequestBody CreateRestaurantRequest request) {
         UUID id = restaurants.create(user, request.name());

@@ -1,5 +1,8 @@
 package io.github.guilhermedkdk.ordertracker.auth;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -18,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@Tag(name = "Autenticação", description = "Cadastro, login e sessão em cookie httpOnly.")
 @RequestMapping("/api/auth")
 class AuthController {
 
@@ -29,6 +33,10 @@ class AuthController {
         this.sessions = sessions;
     }
 
+    @Operation(summary = "Cadastra um dono e abre a sessão")
+    @ApiResponse(responseCode = "201", description = "Conta criada e sessão aberta")
+    @ApiResponse(responseCode = "400", description = "Dados inválidos")
+    @ApiResponse(responseCode = "409", description = "E-mail já cadastrado")
     @PostMapping("/signup")
     ResponseEntity<UserResponse> signup(@Valid @RequestBody SignupRequest request) {
         User user = auth.signup(request.name(), request.email(), request.password());
@@ -39,6 +47,9 @@ class AuthController {
                 .body(UserResponse.of(user));
     }
 
+    @Operation(summary = "Abre a sessão")
+    @ApiResponse(responseCode = "200", description = "Sessão aberta")
+    @ApiResponse(responseCode = "401", description = "E-mail ou senha inválidos")
     @PostMapping("/login")
     ResponseEntity<UserResponse> login(@Valid @RequestBody LoginRequest request) {
         User user = auth.login(request.email(), request.password());
@@ -49,6 +60,8 @@ class AuthController {
                 .body(UserResponse.of(user));
     }
 
+    @Operation(summary = "Fecha a sessão")
+    @ApiResponse(responseCode = "204", description = "Sessão fechada")
     @PostMapping("/logout")
     ResponseEntity<Void> logout() {
         return ResponseEntity.noContent()
@@ -56,6 +69,9 @@ class AuthController {
                 .build();
     }
 
+    @Operation(summary = "Usuário da sessão")
+    @ApiResponse(responseCode = "200", description = "O usuário logado")
+    @ApiResponse(responseCode = "401", description = "Sem sessão")
     @GetMapping("/me")
     UserResponse me(CurrentUser current) {
         return auth.find(current.id())
