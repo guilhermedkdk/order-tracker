@@ -136,6 +136,51 @@ describe('order list', () => {
     ).toBeInTheDocument()
   })
 
+  it('sends the person to login when the session ends during an action', async () => {
+    const order = orderSummary()
+    server.use(
+      signedInAs(ana),
+      restaurants,
+      http.get('/api/orders', () => HttpResponse.json(page([order]))),
+      http.patch(`/api/orders/${order.id}/status`, () =>
+        HttpResponse.json({ detail: 'Faça login para continuar.' }, { status: 401 }),
+      ),
+    )
+    const { user } = renderAt(`/pedidos?restaurante=${pizzaria.id}`)
+
+    const row = await screen.findByRole('row', { name: /00C0DE11/ })
+    await user.click(within(row).getByRole('button', { name: 'Iniciar preparo' }))
+
+    expect(await screen.findByRole('heading', { name: 'Entrar' })).toBeInTheDocument()
+  })
+
+  it('clears the refusal message once a later move works', async () => {
+    let order = orderSummary()
+    let refuse = true
+    server.use(
+      signedInAs(ana),
+      restaurants,
+      http.get('/api/orders', () => HttpResponse.json(page([order]))),
+      http.patch(`/api/orders/${order.id}/status`, () => {
+        if (refuse) {
+          refuse = false
+          return HttpResponse.json({ detail: 'Tente de novo.' }, { status: 409 })
+        }
+        order = orderSummary({ status: 'EM_PREPARO', allowedNextStatuses: ['CANCELADO'] })
+        return HttpResponse.json(orderDetails(order))
+      }),
+    )
+    const { user } = renderAt(`/pedidos?restaurante=${pizzaria.id}`)
+
+    const row = await screen.findByRole('row', { name: /00C0DE11/ })
+    await user.click(within(row).getByRole('button', { name: 'Iniciar preparo' }))
+    expect(await screen.findByText('Tente de novo.')).toBeInTheDocument()
+    await user.click(within(row).getByRole('button', { name: 'Iniciar preparo' }))
+
+    expect(await within(row).findByText('Em preparo')).toBeInTheDocument()
+    expect(screen.queryByText('Tente de novo.')).not.toBeInTheDocument()
+  })
+
   it('shows why the API refused a move', async () => {
     const order = orderSummary()
     server.use(

@@ -116,7 +116,7 @@ class OrderController {
 
             @NotNull(message = "Adicione pelo menos um item.")
             @Size(min = 1, max = 50, message = "O pedido deve ter de 1 a 50 itens.")
-            List<@Valid ItemRequest> items,
+            List<@NotNull(message = "Informe o item.") @Valid ItemRequest> items,
 
             @DecimalMin(value = "0.00", message = "A taxa de entrega não pode ser negativa.")
             @DecimalMax(value = "999.99", message = "A taxa de entrega vai até R$ 999,99.")

@@ -79,7 +79,7 @@ export function OrdersPage() {
                     <StatusBadge status={order.status} />
                   </TableCell>
                   <TableCell>
-                    <StatusActions order={order} onError={setActionError} />
+                    <StatusActions order={order} onOutcome={setActionError} />
                   </TableCell>
                 </TableRow>
               ))}

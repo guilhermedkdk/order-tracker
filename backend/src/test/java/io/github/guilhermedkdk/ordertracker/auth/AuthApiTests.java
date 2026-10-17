@@ -160,6 +160,32 @@ class AuthApiTests {
         assertThat(browser.signup("Ana Souza", uniqueEmail(), "segredo123")).hasStatus(HttpStatus.CREATED);
     }
 
+    @Test
+    void staleSessionCookieDoesNotBlockTheOtherPublicRoutes() {
+        var browser = new ApiSession(mvc);
+        browser.setCookie("ot_session", "token-velho");
+
+        assertThat(browser.get("/v3/api-docs")).hasStatus(HttpStatus.OK);
+        assertThat(browser.get("/actuator/health")).hasStatus(HttpStatus.OK);
+    }
+
+    @Test
+    void signupChecksTheNameAfterTrimmingIt() {
+        var signup = new ApiSession(mvc).signup(" A ", uniqueEmail(), "segredo123");
+
+        assertThat(signup).hasStatus(HttpStatus.BAD_REQUEST);
+        assertThat(signup).bodyJson().extractingPath("$.errors[0].field").isEqualTo("name");
+    }
+
+    @Test
+    void aPasswordOfSpacesLogsInLikeAnyOther() {
+        String email = uniqueEmail();
+        new ApiSession(mvc).signup("Ana Souza", email, "        ");
+
+        assertThat(new ApiSession(mvc).post("/api/auth/login", credentials(email, "        ")))
+                .hasStatus(HttpStatus.OK);
+    }
+
     private static String credentials(String email, String password) {
         return """
                 {"email": "%s", "password": "%s"}

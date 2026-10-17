@@ -10,10 +10,10 @@ import { ACTION_LABEL } from './labels'
  */
 export function StatusActions({
   order,
-  onError,
+  onOutcome,
 }: {
   order: OrderSummary
-  onError: (message: string) => void
+  onOutcome: (error: string | null) => void
 }) {
   const change = useChangeStatus()
   const forward = order.allowedNextStatuses.filter((status) => status !== 'CANCELADO')
@@ -30,8 +30,9 @@ export function StatusActions({
             change.mutate(
               { orderId: order.id, status },
               {
+                onSuccess: () => onOutcome(null),
                 onError: (error) =>
-                  onError(error instanceof ApiError ? error.message : 'Algo deu errado.'),
+                  onOutcome(error instanceof ApiError ? error.message : 'Algo deu errado.'),
               },
             )
           }

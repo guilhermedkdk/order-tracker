@@ -17,10 +17,8 @@ final class DemoScript {
     static final String BURGER = "Burger da Vila";
     static final String SUSHI = "Sushi Kenzo";
 
-    /**
-     * One sample order. It goes forward until {@code reached} and, when {@code cancellation} is set,
-     * is cancelled from there.
-     */
+    // One sample order. It goes forward until `reached` and, when `cancellation` is set,
+    // is cancelled from there.
     record DemoOrder(
             String restaurant,
             int minutesAgo,

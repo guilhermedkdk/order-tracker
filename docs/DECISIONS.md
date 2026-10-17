@@ -58,9 +58,10 @@ front faz. Não use `with(csrf())`.
 
 **Armadilha:** o resource server tenta validar o token do cookie em qualquer rota, até nas liberadas.
 Com um cookie expirado, cadastro e login respondiam 401 e a pessoa não conseguia entrar de novo.
-**Regra:** `Sessions.resolve` ignora o cookie em cadastro, login e logout. Rota nova que precisa
-funcionar com sessão vencida entra nessa lista.
-**Onde:** `backend/.../auth/Sessions.java`.
+**Regra:** `PublicRoutes` é a lista única das rotas abertas sem sessão. A segurança libera essas rotas,
+e `Sessions.resolve` ignora o cookie nelas. Rota pública nova entra só ali; antes as duas listas eram
+separadas e o Swagger ficou de fora da segunda.
+**Onde:** `backend/.../auth/PublicRoutes.java`.
 
 ### 2026-10-17 - Erros dos filtros de segurança passam pelo mesmo handler
 

@@ -1,7 +1,15 @@
 import { screen } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
-import { ana, orderDetails, orderSummary, page, pizzaria, signedInAs } from '@/test/fixtures'
+import {
+  ana,
+  burger,
+  orderDetails,
+  orderSummary,
+  page,
+  pizzaria,
+  signedInAs,
+} from '@/test/fixtures'
 import { renderAt } from '@/test/render'
 import { server } from '@/test/server'
 
@@ -93,6 +101,28 @@ describe('new order', () => {
       await screen.findByText('O troco precisa ser para R$ 98,80 ou mais.'),
     ).toBeInTheDocument()
     expect(screen.getByLabelText('Troco para')).toHaveAttribute('aria-invalid', 'true')
+  })
+
+  it('sends the order to the restaurant picked in the header, even after switching', async () => {
+    let sent: { restaurantId?: string } | null = null
+    server.use(
+      signedInAs(ana),
+      http.get('/api/restaurants', () => HttpResponse.json([burger, pizzaria])),
+      http.get('/api/orders', () => HttpResponse.json(page([]))),
+      http.post('/api/orders', async ({ request }) => {
+        sent = (await request.json()) as { restaurantId?: string }
+        return HttpResponse.json(orderDetails(orderSummary()), { status: 201 })
+      }),
+    )
+    const { user } = renderAt(`/pedidos/novo?restaurante=${pizzaria.id}`)
+
+    await fillRequiredFields(user)
+    await user.selectOptions(screen.getByLabelText('Forma de pagamento'), 'Pix')
+    await user.selectOptions(screen.getByLabelText('Restaurante'), 'Burger da Vila')
+    await user.click(screen.getByRole('button', { name: 'Registrar pedido' }))
+
+    await screen.findByText('Nenhum pedido ainda. Os novos aparecem aqui.')
+    expect(sent).toMatchObject({ restaurantId: burger.id })
   })
 
   it('adds and removes items, updating the total', async () => {

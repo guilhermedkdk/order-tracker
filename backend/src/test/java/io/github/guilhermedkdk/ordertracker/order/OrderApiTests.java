@@ -267,6 +267,29 @@ public class OrderApiTests {
         assertThat(created).bodyJson().extractingPath("$.deliveryAddress.cep").isEqualTo("01310100");
     }
 
+    @Test
+    void aMissingItemIsAFieldError() {
+        var ana = accounts.owner("Ana Souza");
+        String json = orderJson(restaurant(ana, "Pizzaria da Ana")).replace("\"items\": [{", "\"items\": [null, {");
+
+        var created = ana.post("/api/orders", json);
+
+        assertThat(created).hasStatus(HttpStatus.BAD_REQUEST);
+        assertThat(created).bodyJson().extractingPath("$.errors[0].field").isEqualTo("items[0]");
+    }
+
+    @Test
+    void aMalformedParameterAnswersInPortuguese() {
+        var ana = accounts.owner("Ana Souza");
+
+        var list = ana.get("/api/orders?status=PRONTO");
+        var find = ana.get("/api/orders/nao-e-um-id");
+
+        assertThat(list).hasStatus(HttpStatus.BAD_REQUEST);
+        assertThat(list).bodyJson().extractingPath("$.detail").isEqualTo("Valor inválido para status.");
+        assertThat(find).bodyJson().extractingPath("$.detail").isEqualTo("Valor inválido para id.");
+    }
+
     static MvcTestResult changeStatus(ApiSession session, String orderId, String json) {
         return session.patch("/api/orders/" + orderId + "/status", json);
     }

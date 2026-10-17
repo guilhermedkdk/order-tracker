@@ -49,7 +49,7 @@ class DemoData {
         this.clock = clock;
     }
 
-    /** Creates the demo accounts and their data the first time; later starts change nothing. */
+    // Creates the demo accounts and their data the first time; later starts change nothing.
     @Transactional
     void seed() {
         if (users.exists("admin@example.com")) {
@@ -59,10 +59,8 @@ class DemoData {
         load(owners.rafael(), owners.juliana());
     }
 
-    /**
-     * Puts the demo back as it was, with timestamps relative to now. The accounts stay, so whoever
-     * clicked keeps their session; everything the demo owners own is deleted and recreated.
-     */
+    // Puts the demo back as it was, with timestamps relative to now. The accounts stay, so whoever
+    // clicked keeps their session; everything the demo owners own is deleted and recreated.
     @Transactional
     void restore() {
         Owners owners = ensureAccounts();

@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import type { ReactNode } from 'react'
+import { useEffect, type ReactNode } from 'react'
 import { useForm, useWatch, type FieldError as FormFieldError } from 'react-hook-form'
 import { useLocation, useNavigate } from 'react-router'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -36,6 +36,13 @@ export function NewOrderPage() {
     defaultValues: emptyOrder(fixedRestaurant?.id ?? ''),
   })
   const { errors, isSubmitting } = form.formState
+  const fixedRestaurantId = fixedRestaurant?.id
+  // The header picker can change while the form is open; the order follows it.
+  useEffect(() => {
+    if (fixedRestaurantId) {
+      form.setValue('restaurantId', fixedRestaurantId)
+    }
+  }, [fixedRestaurantId, form])
   const [items, deliveryFee, method] = useWatch({
     control: form.control,
     name: ['items', 'deliveryFee', 'payment.method'],

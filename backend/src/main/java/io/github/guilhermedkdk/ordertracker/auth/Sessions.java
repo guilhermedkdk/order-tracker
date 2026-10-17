@@ -5,7 +5,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Set;
 import java.util.UUID;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
@@ -23,9 +22,6 @@ class Sessions implements BearerTokenResolver {
 
     static final String COOKIE = "ot_session";
     static final String ISSUER = "order-tracker";
-
-    // A stale cookie on these routes would answer 401 and keep the person from signing in again.
-    private static final Set<String> IGNORED_PATHS = Set.of("/api/auth/signup", "/api/auth/login", "/api/auth/logout");
 
     private final JwtEncoder encoder;
     private final Clock clock;
@@ -67,7 +63,7 @@ class Sessions implements BearerTokenResolver {
 
     @Override
     public String resolve(HttpServletRequest request) {
-        if (IGNORED_PATHS.contains(request.getRequestURI()) || request.getCookies() == null) {
+        if (PublicRoutes.MATCHER.matches(request) || request.getCookies() == null) {
             return null;
         }
         for (Cookie cookie : request.getCookies()) {

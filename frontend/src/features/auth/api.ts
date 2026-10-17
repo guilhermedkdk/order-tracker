@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { z } from 'zod'
 import { api, ApiError } from '@/lib/http'
 import type { LoginInput, SignupInput } from './schemas'
@@ -25,12 +25,21 @@ export function useMe() {
   })
 }
 
+/**
+ * Opens the session in the cache: whatever an earlier user left there is dropped, so nothing of
+ * theirs shows while the new user's data loads.
+ */
+export function startSession(queryClient: QueryClient, user: User): void {
+  queryClient.removeQueries({ predicate: (query) => query.queryKey[0] !== meQueryKey[0] })
+  queryClient.setQueryData(meQueryKey, user)
+}
+
 export function useLogin() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (input: LoginInput) =>
       api({ path: '/auth/login', method: 'POST', body: input, schema: userSchema }),
-    onSuccess: (user) => queryClient.setQueryData(meQueryKey, user),
+    onSuccess: (user) => startSession(queryClient, user),
   })
 }
 
@@ -39,7 +48,7 @@ export function useSignup() {
   return useMutation({
     mutationFn: (input: SignupInput) =>
       api({ path: '/auth/signup', method: 'POST', body: input, schema: userSchema }),
-    onSuccess: (user) => queryClient.setQueryData(meQueryKey, user),
+    onSuccess: (user) => startSession(queryClient, user),
   })
 }
 

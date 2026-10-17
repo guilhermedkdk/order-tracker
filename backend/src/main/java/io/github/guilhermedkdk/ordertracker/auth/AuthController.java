@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.net.URI;
@@ -94,13 +95,14 @@ class AuthController {
             String password) {
 
         SignupRequest {
+            name = name == null ? null : name.strip();
             email = normalizeEmail(email);
         }
     }
 
     record LoginRequest(
             @NotBlank(message = "Informe o e-mail.") String email,
-            @NotBlank(message = "Informe a senha.") String password) {
+            @NotEmpty(message = "Informe a senha.") String password) {
 
         LoginRequest {
             email = normalizeEmail(email);

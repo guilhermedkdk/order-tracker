@@ -3,6 +3,7 @@ package io.github.guilhermedkdk.ordertracker.shared;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.TypeMismatchException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -44,6 +45,16 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.badRequest()
                 .body(problem(
                         HttpStatus.BAD_REQUEST, "Dados inválidos", "Não foi possível ler o corpo da requisição."));
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleTypeMismatch(
+            TypeMismatchException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        return ResponseEntity.badRequest()
+                .body(problem(
+                        HttpStatus.BAD_REQUEST,
+                        "Dados inválidos",
+                        "Valor inválido para %s.".formatted(ex.getPropertyName())));
     }
 
     @ExceptionHandler(DomainValidationException.class)
