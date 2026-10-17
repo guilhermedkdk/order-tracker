@@ -1,12 +1,14 @@
-import { Outlet, useNavigate } from 'react-router'
+import { Link, Outlet, useNavigate } from 'react-router'
 import { Button } from '@/components/ui/button'
 import { useLogout, useMe } from '@/features/auth/api'
+import { RestaurantSelector } from '@/features/restaurants/RestaurantSelector'
 
-/** The frame around every signed-in screen: product name, who is signed in and the way out. */
+/** The frame around every signed-in screen: product name, restaurant picker, who is signed in. */
 export function AppShell() {
   const me = useMe()
   const logout = useLogout()
   const navigate = useNavigate()
+  const isOwner = me.data?.role === 'DONO'
 
   async function signOut() {
     await logout.mutateAsync()
@@ -16,8 +18,18 @@ export function AppShell() {
   return (
     <div className="min-h-svh">
       <header className="border-b">
-        <div className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-4 px-4">
-          <span className="font-heading font-semibold">Rastreador de pedidos</span>
+        <div className="mx-auto flex min-h-14 max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-2">
+          <div className="flex flex-wrap items-center gap-3">
+            <Link to="/" className="font-heading font-semibold">
+              Rastreador de pedidos
+            </Link>
+            <RestaurantSelector />
+            {isOwner && (
+              <Button asChild variant="ghost" size="sm">
+                <Link to="/restaurantes/novo">Novo restaurante</Link>
+              </Button>
+            )}
+          </div>
           <div className="flex items-center gap-3 text-sm">
             <span className="text-muted-foreground">{me.data?.name}</span>
             <Button variant="outline" size="sm" onClick={signOut} disabled={logout.isPending}>

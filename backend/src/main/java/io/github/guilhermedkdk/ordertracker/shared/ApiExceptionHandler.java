@@ -55,6 +55,11 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         return problem(HttpStatus.NOT_FOUND, "Não encontrado", ex.getMessage());
     }
 
+    @ExceptionHandler(ForbiddenException.class)
+    ProblemDetail forbidden(ForbiddenException ex) {
+        return problem(HttpStatus.FORBIDDEN, "Acesso negado", ex.getMessage());
+    }
+
     @ExceptionHandler(ConflictException.class)
     ProblemDetail conflict(ConflictException ex) {
         return problem(HttpStatus.CONFLICT, "Conflito", ex.getMessage());

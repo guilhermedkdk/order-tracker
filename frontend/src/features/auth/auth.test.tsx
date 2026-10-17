@@ -1,20 +1,11 @@
 import { screen } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
+import { ana, noSession, signedInAs } from '@/test/fixtures'
 import { renderAt } from '@/test/render'
 import { server } from '@/test/server'
 
-const ana = {
-  id: '0199f0a0-0000-7000-8000-000000000001',
-  name: 'Ana Souza',
-  email: 'ana@example.com',
-  role: 'DONO',
-  demo: false,
-}
-
-const noSession = http.get('/api/auth/me', () =>
-  HttpResponse.json({ detail: 'Faça login para continuar.' }, { status: 401 }),
-)
+const noRestaurants = http.get('/api/restaurants', () => HttpResponse.json([]))
 
 describe('authentication', () => {
   it('sends a visitor without a session to the login screen', async () => {
@@ -25,9 +16,10 @@ describe('authentication', () => {
     expect(await screen.findByRole('heading', { name: 'Entrar' })).toBeInTheDocument()
   })
 
-  it('logs in and lands on the home screen', async () => {
+  it('logs in and lands inside the app', async () => {
     server.use(
       noSession,
+      noRestaurants,
       http.post('/api/auth/login', () => HttpResponse.json(ana)),
     )
     const { user } = renderAt('/')
@@ -36,7 +28,9 @@ describe('authentication', () => {
     await user.type(screen.getByLabelText('Senha'), 'segredo123')
     await user.click(screen.getByRole('button', { name: 'Entrar' }))
 
-    expect(await screen.findByRole('heading', { name: 'Olá, Ana Souza' })).toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', { name: 'Crie seu primeiro restaurante' }),
+    ).toBeInTheDocument()
   })
 
   it('shows why the login failed', async () => {
@@ -81,7 +75,8 @@ describe('authentication', () => {
 
   it('logs out back to the login screen', async () => {
     server.use(
-      http.get('/api/auth/me', () => HttpResponse.json(ana)),
+      signedInAs(ana),
+      noRestaurants,
       http.post('/api/auth/logout', () => new HttpResponse(null, { status: 204 })),
     )
     const { user } = renderAt('/')

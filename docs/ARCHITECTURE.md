@@ -29,8 +29,8 @@ ao resto.
 
 | Pacote | Interface (o que outros pacotes usam) | O que fica escondido |
 | ------ | ------------------------------------- | -------------------- |
-| `auth` | `CurrentUser`, recebido como parâmetro nos controllers; endpoints `/api/auth/*` | Usuários e senhas (BCrypt), emissão e leitura do JWT no cookie, CSRF, a configuração do Spring Security e, na fase 3, o refresh token com rotação. |
-| `restaurant` | `RestaurantScope scopeOf(CurrentUser)`; endpoints `/api/restaurants` | A regra de visibilidade: admin vê todos os restaurantes, dono vê os seus. É o único lugar do sistema que olha o papel para decidir o que alguém vê. |
+| `auth` | `CurrentUser`, recebido como parâmetro nos controllers; `UserDirectory`, para ler nomes de usuários; endpoints `/api/auth/*` | Usuários e senhas (BCrypt), emissão e leitura do JWT no cookie, CSRF, a configuração do Spring Security e, na fase 3, o refresh token com rotação. |
+| `restaurant` | `RestaurantService.scopeOf(CurrentUser)`, que devolve um `RestaurantScope` (`All` ou `Only`); endpoints `/api/restaurants` | A regra de visibilidade: admin vê todos os restaurantes, dono vê os seus. É o único lugar do sistema que olha o papel para decidir o que alguém vê. Também a regra de que só donos criam restaurantes. |
 | `order` | `Order` (`create`, `changeStatus`, `allowedNextStatuses`), `OrderService`, `OrderRepository`; endpoints `/api/orders` | A máquina de status, o cálculo de subtotal e total, as regras de troco e de cancelamento, o histórico de status, filtros e paginação, e a forma do pedido na API (código, próximos status). |
 | `customer` | `CustomerBook` (`remember`, `lookup`); endpoint `/api/customers` | A busca por restaurante e telefone, e a atualização do nome e do último endereço. |
 | `demo` | `POST /api/demo/restore`, só para o admin | As contas demo, o roteiro de restaurantes e pedidos com horários no passado, a carga na primeira subida e a restauração. |
@@ -124,8 +124,11 @@ O ViaCEP (fase 2) é a única chamada externa, feita direto do navegador por `li
 
 ## Testes
 
-- **Domínio** (`Order`, `RestaurantScope`): JUnit e AssertJ, sem Spring. Cobrem cada transição, os
-  totais, o troco e o cancelamento.
+- **Domínio** (`Order`): JUnit e AssertJ, sem Spring. Cobrem cada transição, os totais, o troco e o
+  cancelamento. `RestaurantScope` não tem teste próprio: cabe em duas linhas e é exercitado pelos
+  testes HTTP de restaurantes e pedidos.
+- **Contas nos testes**: `TestAccounts` entrega sessões de dono (pelo cadastro) e de admin (inserido
+  direto no banco, porque nenhuma rota cria admin).
 - **HTTP**: `@SpringBootTest` com MockMvc e um Postgres de verdade via Testcontainers, compartilhado entre
   as classes de teste. Cada funcionalidade é testada pelos seus endpoints, com cookie e CSRF reais,
   incluindo 400, 401, 404 e 409.
