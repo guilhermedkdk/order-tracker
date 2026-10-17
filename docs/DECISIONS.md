@@ -3,6 +3,22 @@
 Log append-only, com a entrada mais nova no topo. Cada entrada registra o que uma sessão futura faria
 errado sem ela.
 
+### 2026-10-17 - Alias `@/` sem `baseUrl`
+
+**Armadilha:** a instalação do shadcn/ui manda pôr `baseUrl` no `tsconfig`, mas o TypeScript 6 trata
+`baseUrl` como obsoleto e o `tsc` falha com TS5101.
+**Regra:** o alias `@/*` usa só `paths`, que já resolve a partir do próprio `tsconfig`. Não adicione
+`baseUrl` nem `ignoreDeprecations`.
+**Onde:** `frontend/tsconfig.json`, `frontend/tsconfig.app.json`.
+
+### 2026-10-17 - Script de Linux entra no Git como executável
+
+**Armadilha:** no Windows o Git grava arquivos sem o bit de execução, e o `./mvnw` falha com permissão
+negada no Linux, onde rodam o CI e a imagem Docker.
+**Regra:** todo script que roda no Linux entra com `git update-index --chmod=+x <arquivo>`. Confira com
+`git ls-files -s`, que deve mostrar `100755`.
+**Onde:** `backend/mvnw`.
+
 ### 2026-10-17 - Postgres em todos os ambientes, não SQLite
 
 **Armadilha:** o enunciado pede "SQLite ou similar", e um perfil SQLite local parece facilitar a vida
