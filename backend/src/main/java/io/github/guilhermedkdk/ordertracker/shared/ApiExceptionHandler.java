@@ -3,6 +3,7 @@ package io.github.guilhermedkdk.ordertracker.shared;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -63,6 +64,14 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(ConflictException.class)
     ProblemDetail conflict(ConflictException ex) {
         return problem(HttpStatus.CONFLICT, "Conflito", ex.getMessage());
+    }
+
+    @ExceptionHandler(OptimisticLockingFailureException.class)
+    ProblemDetail concurrentChange(OptimisticLockingFailureException ex) {
+        return problem(
+                HttpStatus.CONFLICT,
+                "Conflito",
+                "Outra pessoa alterou este pedido agora há pouco. Recarregue e tente de novo.");
     }
 
     @ExceptionHandler(AuthenticationException.class)

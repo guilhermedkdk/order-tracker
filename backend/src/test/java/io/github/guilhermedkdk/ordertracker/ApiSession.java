@@ -1,6 +1,8 @@
 package io.github.guilhermedkdk.ordertracker;
 
+import com.jayway.jsonpath.JsonPath;
 import jakarta.servlet.http.Cookie;
+import java.io.UnsupportedEncodingException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -28,6 +30,15 @@ public final class ApiSession {
     /** An e-mail no other test uses, since every test shares one database. */
     public static String uniqueEmail() {
         return "user-" + UUID.randomUUID() + "@example.com";
+    }
+
+    /** Reads one value of a JSON answer, such as the id of what was just created. */
+    public static String read(MvcTestResult result, String jsonPath) {
+        try {
+            return String.valueOf(JsonPath.<Object>read(result.getResponse().getContentAsString(), jsonPath));
+        } catch (UnsupportedEncodingException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     public MvcTestResult get(String uri) {

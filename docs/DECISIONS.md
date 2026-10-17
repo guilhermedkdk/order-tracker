@@ -3,6 +3,15 @@
 Log append-only, com a entrada mais nova no topo. Cada entrada registra o que uma sessão futura faria
 errado sem ela.
 
+### 2026-10-17 - Itens e histórico do pedido são coleções ordenadas
+
+**Armadilha:** sem `@OrderColumn`, o Hibernate trata uma `@ElementCollection` como saco e, a cada
+mudança de status, apaga e regrava o histórico inteiro do pedido.
+**Regra:** itens e histórico são `@ElementCollection` de records com `@OrderColumn(name = "position")`,
+então uma mudança de status só insere uma linha. Não tire o `@OrderColumn` nem troque por `@OneToMany`
+sem motivo.
+**Onde:** `backend/.../order/Order.java`, `V3__create_orders.sql`.
+
 ### 2026-10-17 - API local escuta só no 127.0.0.1
 
 **Armadilha:** por padrão o Tomcat escuta em todos os endereços, o que expõe a API de desenvolvimento a
@@ -127,8 +136,8 @@ três horas.
 **Armadilha:** o id é UUID v7, cujos primeiros caracteres são o horário da criação; pedidos criados com
 menos de um minuto de diferença teriam o mesmo código se ele viesse do começo.
 **Regra:** o código do pedido são os últimos 8 caracteres hexadecimais do UUID, em maiúsculas. Ele só
-serve para exibir; rotas e buscas usam o UUID inteiro.
-**Onde:** formatação do pedido no `frontend/`.
+serve para exibir; rotas e buscas usam o UUID inteiro. A API já devolve o campo `code`.
+**Onde:** `Order.code()` no `backend/`.
 
 ### 2026-10-17 - Restaurar demonstração é a única exclusão
 

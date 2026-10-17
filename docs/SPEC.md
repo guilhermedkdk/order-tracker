@@ -18,10 +18,10 @@ Cada linha só é marcada quando o teste que a prova existe e passa.
 | [x] | Cadastro com nome, e-mail e senha | `POST /api/auth/signup` | `AuthApiTests`, `auth.test.tsx` |
 | [x] | Login com e-mail e senha | `POST /api/auth/login`, sessão em cookie | `AuthApiTests`, `auth.test.tsx` |
 | [x] | Só usuários autenticados acessam | Toda rota fora do cadastro, do login, do logout e da documentação responde 401 sem sessão; o front redireciona para `/entrar` | `AuthApiTests`, `auth.test.tsx` |
-| [ ] | Criar pedido (cliente, itens, endereço) | `POST /api/orders` | teste HTTP de pedidos |
-| [ ] | Atualizar o status (`RECEBIDO`, `EM_PREPARO`, `SAIU_PARA_ENTREGA`, `ENTREGUE`, `CANCELADO`) | `PATCH /api/orders/{id}/status`, com as regras de transição | testes de domínio e HTTP de pedidos |
-| [ ] | Listar todos os pedidos e buscar por ID | `GET /api/orders`, `GET /api/orders/{id}` | teste HTTP de pedidos |
-| [ ] | Persistência em SQLite ou similar | Postgres com Flyway | testes HTTP com Testcontainers |
+| [x] | Criar pedido (cliente, itens, endereço) | `POST /api/orders` | `OrderApiTests` |
+| [x] | Atualizar o status (`RECEBIDO`, `EM_PREPARO`, `SAIU_PARA_ENTREGA`, `ENTREGUE`, `CANCELADO`) | `PATCH /api/orders/{id}/status`, com as regras de transição | `OrderTests`, `OrderApiTests` |
+| [x] | Listar todos os pedidos e buscar por ID | `GET /api/orders`, `GET /api/orders/{id}` | `OrderApiTests` |
+| [x] | Persistência em SQLite ou similar | Postgres com Flyway | todos os testes HTTP, com Postgres real via Testcontainers |
 | [ ] | React lista pedidos com status atual e cria pedido | Telas `/pedidos` e `/pedidos/novo` | testes do front |
 | [ ] | Repositório Git com histórico | Um PR por fase, commits por passo | histórico no GitHub |
 

@@ -2,9 +2,14 @@ package io.github.guilhermedkdk.ordertracker.restaurant;
 
 import io.github.guilhermedkdk.ordertracker.auth.CurrentUser;
 import io.github.guilhermedkdk.ordertracker.shared.ForbiddenException;
+import io.github.guilhermedkdk.ordertracker.shared.NotFoundException;
 import java.time.Clock;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +31,19 @@ public class RestaurantService {
             return new RestaurantScope.All();
         }
         return new RestaurantScope.Only(new HashSet<>(restaurants.findIdsByOwnerId(user.id())));
+    }
+
+    /** Answers 404 unless the restaurant exists and is in the scope, so its existence never leaks. */
+    @Transactional(readOnly = true)
+    public void requireVisible(RestaurantScope scope, UUID restaurantId) {
+        if (!scope.includes(restaurantId) || !restaurants.existsById(restaurantId)) {
+            throw new NotFoundException("Restaurante não encontrado.");
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public Map<UUID, String> namesOf(Collection<UUID> ids) {
+        return restaurants.findAllById(ids).stream().collect(Collectors.toMap(Restaurant::id, Restaurant::name));
     }
 
     @Transactional(readOnly = true)
