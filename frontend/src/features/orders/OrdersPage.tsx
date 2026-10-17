@@ -13,15 +13,19 @@ import {
 import { useSelectedRestaurant } from '@/features/restaurants/selection'
 import { formatDateTime, formatMoney } from '@/lib/format'
 import { useOrders } from './api'
+import { useOrderListParams } from './list-params'
+import { Pagination } from './Pagination'
 import { StatusActions } from './StatusActions'
 import { StatusBadge } from './StatusBadge'
+import { StatusFilter } from './StatusFilter'
 
 export function OrdersPage() {
   const { selection } = useSelectedRestaurant()
   const { search } = useLocation()
   const restaurantId = selection.kind === 'one' ? selection.restaurant.id : undefined
   const showRestaurant = selection.kind === 'all'
-  const orders = useOrders({ restaurantId })
+  const { status, page, setStatus, setPage } = useOrderListParams()
+  const orders = useOrders({ restaurantId, status, page })
   const [actionError, setActionError] = useState<string | null>(null)
   const title =
     selection.kind === 'one'
@@ -37,6 +41,8 @@ export function OrdersPage() {
         </Button>
       </div>
 
+      <StatusFilter value={status} onChange={setStatus} />
+
       {actionError && (
         <Alert variant="destructive">
           <AlertDescription>{actionError}</AlertDescription>
@@ -46,7 +52,9 @@ export function OrdersPage() {
       {orders.isError && <p className="text-destructive">{orders.error.message}</p>}
       {orders.data && orders.data.content.length === 0 && (
         <p className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">
-          Nenhum pedido ainda. Os novos aparecem aqui.
+          {status
+            ? 'Nenhum pedido com esse status.'
+            : 'Nenhum pedido ainda. Os novos aparecem aqui.'}
         </p>
       )}
       {orders.data && orders.data.content.length > 0 && (
@@ -92,12 +100,12 @@ export function OrdersPage() {
               ))}
             </TableBody>
           </Table>
-          {orders.data.totalElements > orders.data.content.length && (
-            <p className="text-sm text-muted-foreground">
-              Mostrando os {orders.data.content.length} mais recentes de {orders.data.totalElements}{' '}
-              pedidos.
-            </p>
-          )}
+          <Pagination
+            page={page}
+            totalPages={orders.data.totalPages}
+            totalElements={orders.data.totalElements}
+            onChange={setPage}
+          />
         </>
       )}
     </section>

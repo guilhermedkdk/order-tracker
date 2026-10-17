@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { z } from 'zod'
 import { api } from '@/lib/http'
 import type { NewOrderBody } from './order-form'
@@ -82,14 +82,33 @@ export type OrderActionTarget = Pick<OrderSummary, 'id' | 'code' | 'allowedNextS
 
 const ordersKey = ['orders'] as const
 
-/** The newest orders of one restaurant, or of every visible one when `restaurantId` is absent. */
-export function useOrders({ restaurantId }: { restaurantId?: string }) {
+/**
+ * One page (counted from 1) of the newest orders, of one restaurant or of every visible one when
+ * `restaurantId` is absent, optionally of one status. The previous page stays on screen while the
+ * next one loads.
+ */
+export function useOrders({
+  restaurantId,
+  status,
+  page,
+}: {
+  restaurantId?: string
+  status?: OrderStatus
+  page: number
+}) {
   return useQuery({
-    queryKey: [...ordersKey, 'list', { restaurantId }],
+    queryKey: [...ordersKey, 'list', { restaurantId, status, page }],
     queryFn: () => {
-      const search = restaurantId ? `?restaurantId=${encodeURIComponent(restaurantId)}` : ''
-      return api({ path: `/orders${search}`, schema: orderPageSchema })
+      const search = new URLSearchParams({ page: String(page - 1) })
+      if (restaurantId) {
+        search.set('restaurantId', restaurantId)
+      }
+      if (status) {
+        search.set('status', status)
+      }
+      return api({ path: `/orders?${search.toString()}`, schema: orderPageSchema })
     },
+    placeholderData: keepPreviousData,
   })
 }
 

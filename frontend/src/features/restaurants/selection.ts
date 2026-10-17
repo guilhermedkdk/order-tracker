@@ -25,6 +25,8 @@ export function useSelectedRestaurant(): {
     setParams((current) => {
       const next = new URLSearchParams(current)
       next.set('restaurante', value)
+      // Another restaurant has other pages; start from the first.
+      next.delete('pagina')
       return next
     })
   }
