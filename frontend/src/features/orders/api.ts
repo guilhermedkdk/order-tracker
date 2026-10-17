@@ -63,9 +63,22 @@ const orderSchema = orderSummarySchema.omit({ customerName: true, neighborhood: 
   deliveryFee: z.number(),
   payment: z.object({ method: paymentMethodSchema, changeFor: z.number().nullable() }),
   notes: z.string().nullable(),
+  statusHistory: z.array(
+    z.object({
+      status: orderStatusSchema,
+      changedAt: z.string(),
+      authorName: z.string(),
+      cancellationReason: cancellationReasonSchema.nullable(),
+      cancellationDetail: z.string().nullable(),
+    }),
+  ),
 })
 
 export type OrderSummary = z.infer<typeof orderSummarySchema>
+export type Order = z.infer<typeof orderSchema>
+
+/** What the status actions need, which both a list entry and a full order have. */
+export type OrderActionTarget = Pick<OrderSummary, 'id' | 'code' | 'allowedNextStatuses'>
 
 const ordersKey = ['orders'] as const
 
@@ -77,6 +90,14 @@ export function useOrders({ restaurantId }: { restaurantId?: string }) {
       const search = restaurantId ? `?restaurantId=${encodeURIComponent(restaurantId)}` : ''
       return api({ path: `/orders${search}`, schema: orderPageSchema })
     },
+  })
+}
+
+/** One order with items and status history, if the user can see it. */
+export function useOrder(id: string) {
+  return useQuery({
+    queryKey: [...ordersKey, 'detail', id],
+    queryFn: () => api({ path: `/orders/${encodeURIComponent(id)}`, schema: orderSchema }),
   })
 }
 

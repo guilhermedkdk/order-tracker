@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button'
 import { ApiError } from '@/lib/http'
-import { useChangeStatus, type OrderSummary } from './api'
+import { useChangeStatus, type OrderActionTarget } from './api'
 import { CancelOrderDialog } from './CancelOrderDialog'
 import { ACTION_LABEL } from './labels'
 
@@ -12,7 +12,7 @@ export function StatusActions({
   order,
   onOutcome,
 }: {
-  order: OrderSummary
+  order: OrderActionTarget
   onOutcome: (error: string | null) => void
 }) {
   const change = useChangeStatus()

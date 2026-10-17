@@ -67,7 +67,14 @@ export function OrdersPage() {
             <TableBody>
               {orders.data.content.map((order) => (
                 <TableRow key={order.id}>
-                  <TableCell className="font-mono text-xs">#{order.code}</TableCell>
+                  <TableCell className="font-mono text-xs">
+                    <Link
+                      to={{ pathname: `/pedidos/${order.id}`, search }}
+                      className="underline-offset-4 hover:underline"
+                    >
+                      #{order.code}
+                    </Link>
+                  </TableCell>
                   {showRestaurant && <TableCell>{order.restaurantName}</TableCell>}
                   <TableCell>{order.customerName}</TableCell>
                   <TableCell>{order.neighborhood}</TableCell>

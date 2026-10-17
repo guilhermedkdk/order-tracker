@@ -18,7 +18,7 @@ import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/c
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Textarea } from '@/components/ui/textarea'
 import { showApiError } from '@/lib/form-errors'
-import { cancellationReasonSchema, useChangeStatus, type OrderSummary } from './api'
+import { cancellationReasonSchema, useChangeStatus, type OrderActionTarget } from './api'
 import { CANCELLATION_REASON_LABEL } from './labels'
 
 // Mirrors the API rules so the dialog answers at once; the API still checks them.
@@ -38,7 +38,7 @@ const cancelSchema = z
 type CancelInput = z.input<typeof cancelSchema>
 type CancelOutput = z.output<typeof cancelSchema>
 
-export function CancelOrderDialog({ order }: { order: OrderSummary }) {
+export function CancelOrderDialog({ order }: { order: OrderActionTarget }) {
   const [open, setOpen] = useState(false)
   const change = useChangeStatus()
   const form = useForm<CancelInput, unknown, CancelOutput>({
