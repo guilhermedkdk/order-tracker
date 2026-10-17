@@ -46,6 +46,15 @@ public class RestaurantService {
         return restaurants.findAllById(ids).stream().collect(Collectors.toMap(Restaurant::id, Restaurant::name));
     }
 
+    /**
+     * Deletes every restaurant of these owners, with their orders. Only restoring the demo calls
+     * this; nothing else in the system deletes data.
+     */
+    @Transactional
+    public void deleteAllOwnedBy(Collection<UUID> ownerIds) {
+        restaurants.deleteByOwnerIdIn(ownerIds);
+    }
+
     @Transactional(readOnly = true)
     List<Restaurant> visible(RestaurantScope scope) {
         return switch (scope) {
@@ -54,11 +63,14 @@ public class RestaurantService {
         };
     }
 
+    /** Opens a restaurant owned by {@code owner} and returns its id. Admins own no restaurants. */
     @Transactional
-    Restaurant create(CurrentUser owner, String name) {
+    public UUID create(CurrentUser owner, String name) {
         if (owner.isAdmin()) {
             throw new ForbiddenException("Só donos criam restaurantes.");
         }
-        return restaurants.save(new Restaurant(name, owner.id(), clock.instant()));
+        return restaurants
+                .save(new Restaurant(name, owner.id(), clock.instant()))
+                .id();
     }
 }

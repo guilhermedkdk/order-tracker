@@ -40,9 +40,9 @@ class RestaurantController {
 
     @PostMapping
     ResponseEntity<RestaurantResponse> create(CurrentUser user, @Valid @RequestBody CreateRestaurantRequest request) {
-        Restaurant restaurant = restaurants.create(user, request.name());
-        return ResponseEntity.created(URI.create("/api/restaurants/" + restaurant.id()))
-                .body(RestaurantResponse.of(restaurant, user.name()));
+        UUID id = restaurants.create(user, request.name());
+        return ResponseEntity.created(URI.create("/api/restaurants/" + id))
+                .body(new RestaurantResponse(id, request.name(), user.name()));
     }
 
     record CreateRestaurantRequest(

@@ -42,6 +42,10 @@ class User {
         return new User(name, email, passwordHash, Role.DONO, false, createdAt);
     }
 
+    static User demo(String name, String email, String passwordHash, Role role, Instant createdAt) {
+        return new User(name, email, passwordHash, role, true, createdAt);
+    }
+
     CurrentUser toCurrentUser() {
         return new CurrentUser(id, name, email, role);
     }

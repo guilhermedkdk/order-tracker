@@ -13,7 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.test.web.servlet.assertj.MvcTestResult;
 
 @IntegrationTest
-class OrderApiTests {
+public class OrderApiTests {
 
     @Autowired
     TestAccounts accounts;
@@ -295,7 +295,8 @@ class OrderApiTests {
                 """.formatted(restaurantId);
     }
 
-    static MvcTestResult createOrder(ApiSession session, String restaurantId) {
+    /** Creates the sample order of {@link #orderJson} in that restaurant. */
+    public static MvcTestResult createOrder(ApiSession session, String restaurantId) {
         return session.post("/api/orders", orderJson(restaurantId));
     }
 }

@@ -3,6 +3,22 @@
 Log append-only, com a entrada mais nova no topo. Cada entrada registra o que uma sessão futura faria
 errado sem ela.
 
+### 2026-10-17 - Dados de demonstração passam pelo domínio
+
+**Armadilha:** o caminho comum é um SQL de seed, que grava totais e histórico à mão e deixa de bater
+com as regras na primeira mudança delas.
+**Regra:** o roteiro em `DemoScript` vira pedidos por `Order.create` e `changeStatus`, com instantes no
+passado. Se uma regra nova quebrar o roteiro, `DemoDataTests` falha; corrija o roteiro, não a regra.
+**Onde:** `backend/.../demo/`.
+
+### 2026-10-17 - Testes rodam com os dados de demonstração ligados
+
+**Armadilha:** com a demo carregada no banco dos testes, qualquer contagem global (todos os pedidos,
+todos os restaurantes) muda conforme a demo muda.
+**Regra:** um teste só conta o que pertence às contas que ele mesmo criou com `TestAccounts`, ou às
+contas demo quando o teste é sobre a demo. Para o admin, use `contains`, nunca `containsExactly`.
+**Onde:** `backend/src/test/`.
+
 ### 2026-10-17 - Valores em reais são campos de texto
 
 **Armadilha:** `<input type="number">` não aceita vírgula em vários navegadores e devolve vazio para

@@ -26,3 +26,6 @@ app:
     jwt-secret: ''
     session-ttl: 8h
     cookie-secure: false
+  demo:
+    # Public demo accounts and sample orders (docs/SPEC.md). Turn off for a real restaurant.
+    enabled: true

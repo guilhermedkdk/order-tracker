@@ -6,6 +6,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { DemoLogin } from '@/features/demo/DemoLogin'
 import { showApiError } from '@/lib/form-errors'
 import { useLogin, useMe } from './api'
 import { AuthCard } from './AuthCard'
@@ -80,6 +81,12 @@ export function LoginPage() {
           </p>
         </FieldGroup>
       </form>
+      <div className="mt-6">
+        <DemoLogin
+          onLoggedIn={() => navigate(target, { replace: true })}
+          onError={(message) => form.setError('root', { message })}
+        />
+      </div>
     </AuthCard>
   )
 }

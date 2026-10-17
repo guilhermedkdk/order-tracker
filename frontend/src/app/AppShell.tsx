@@ -1,6 +1,8 @@
 import { Link, Outlet, useNavigate } from 'react-router'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { useLogout, useMe } from '@/features/auth/api'
+import { RestoreDemoButton } from '@/features/demo/RestoreDemoButton'
 import { RestaurantSelector } from '@/features/restaurants/RestaurantSelector'
 
 /** The frame around every signed-in screen: product name, restaurant picker, who is signed in. */
@@ -9,6 +11,7 @@ export function AppShell() {
   const logout = useLogout()
   const navigate = useNavigate()
   const isOwner = me.data?.role === 'DONO'
+  const isAdmin = me.data?.role === 'ADMIN'
 
   async function signOut() {
     await logout.mutateAsync()
@@ -31,6 +34,8 @@ export function AppShell() {
             )}
           </div>
           <div className="flex items-center gap-3 text-sm">
+            {isAdmin && <RestoreDemoButton />}
+            {me.data?.demo && <Badge variant="outline">Conta demo</Badge>}
             <span className="text-muted-foreground">{me.data?.name}</span>
             <Button variant="outline" size="sm" onClick={signOut} disabled={logout.isPending}>
               Sair

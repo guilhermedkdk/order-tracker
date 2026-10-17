@@ -116,14 +116,17 @@ Todo pedido na API traz `id` (UUID), `code`, os totais e `allowedNextStatuses`. 
 
 ## Dados de demonstração
 
-- Ligados por `app.demo.enabled`: sim no local e na demo pública, não nos testes (exceto no teste da
-  própria demonstração).
-- Na subida, se a conta do admin demo não existir, cria: o admin, um dono com dois restaurantes e uma
-  dona com um, todos com a mesma senha pública no README, e uns 15 pedidos espalhados pelas últimas
+- Ligados por `app.demo.enabled`: sim no local, na demo pública e nos testes, que assim conferem a
+  carga a cada execução. Um restaurante de verdade desligaria.
+- Na subida, se a conta do admin demo não existir, cria as contas `admin@example.com` (admin),
+  `rafael@example.com` (dono da Cantina Bella Napoli e do Burger da Vila) e `juliana@example.com`
+  (dona do Sushi Kenzo), todas com a senha `demo1234`, e 15 pedidos espalhados pelas últimas quatro
   horas, em todos os status, com histórico coerente e cancelamentos com motivo.
+- Os pedidos de exemplo passam pelas mesmas regras do domínio que um pedido de verdade, só que com
+  horários no passado.
 - Restaurar mantém as contas demo, então a sessão de quem clicou continua valendo. Apaga os
   restaurantes delas, com pedidos e clientes, e recria tudo com horários relativos ao momento da
-  restauração.
+  restauração. Pedidos que o admin demo criou em restaurantes de contas reais ficam.
 
 ## Tempo real (fase 3)
 
