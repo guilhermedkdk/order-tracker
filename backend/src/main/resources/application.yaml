@@ -1,0 +1,39 @@
+server:
+  # Local runs stay off the network; containers set SERVER_ADDRESS=0.0.0.0 (docs/DECISIONS.md).
+  address: 127.0.0.1
+
+spring:
+  application:
+    name: order-tracker
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+springdoc:
+  swagger-ui:
+    # Sends the XSRF-TOKEN cookie back as X-XSRF-TOKEN, which writes need.
+    csrf:
+      enabled: true
+    operations-sorter: method
+    tags-sorter: alpha
+
+app:
+  auth:
+    # Production sets APP_AUTH_JWT_SECRET; blank uses a random key per run.
+    jwt-secret: ''
+    session-ttl: 8h
+    cookie-secure: false
+  demo:
+    # Public demo accounts and sample orders (docs/SPEC.md). Turn off for a real restaurant.
+    enabled: true
