@@ -3,6 +3,39 @@
 Log append-only, com a entrada mais nova no topo. Cada entrada registra o que uma sessão futura faria
 errado sem ela.
 
+### 2026-10-17 - Testes HTTP passam pelo CSRF de verdade
+
+**Armadilha:** o atalho do Spring Security é `with(csrf())`, que injeta um token válido e deixa o
+teste passar mesmo se o contrato com o front (cookie `XSRF-TOKEN` lido e devolvido no header) quebrar.
+**Regra:** testes HTTP usam `ApiSession`, que guarda os cookies e devolve o token no header como o
+front faz. Não use `with(csrf())`.
+**Onde:** `backend/src/test/java/io/github/guilhermedkdk/ordertracker/ApiSession.java`.
+
+### 2026-10-17 - Cookie velho não bloqueia o login
+
+**Armadilha:** o resource server tenta validar o token do cookie em qualquer rota, até nas liberadas.
+Com um cookie expirado, cadastro e login respondiam 401 e a pessoa não conseguia entrar de novo.
+**Regra:** `Sessions.resolve` ignora o cookie em cadastro, login e logout. Rota nova que precisa
+funcionar com sessão vencida entra nessa lista.
+**Onde:** `backend/.../auth/Sessions.java`.
+
+### 2026-10-17 - Erros dos filtros de segurança passam pelo mesmo handler
+
+**Armadilha:** o padrão do Spring Security responde 401 e 403 com corpo vazio e header
+`WWW-Authenticate`, num formato diferente do resto da API.
+**Regra:** o entry point e o access denied handler repassam a exceção ao `HandlerExceptionResolver`, e
+o formato de todo erro fica no `ApiExceptionHandler`. Nenhum filtro escreve resposta de erro sozinho.
+**Onde:** `backend/.../auth/SecurityConfig.java`, `backend/.../shared/ApiExceptionHandler.java`.
+
+### 2026-10-17 - Chave do JWT obrigatória em produção
+
+**Armadilha:** sem `APP_AUTH_JWT_SECRET`, a API gera uma chave aleatória a cada subida. No local isso
+só pede um novo login, mas o Render reinicia a API toda vez que ela acorda e derrubaria todas as
+sessões.
+**Regra:** produção sempre define `APP_AUTH_JWT_SECRET` com pelo menos 32 bytes; a API recusa subir
+com menos. Nunca coloque uma chave fixa no repositório.
+**Onde:** `backend/.../auth/SecurityConfig.java`, variáveis do Render.
+
 ### 2026-10-17 - Alias `@/` sem `baseUrl`
 
 **Armadilha:** a instalação do shadcn/ui manda pôr `baseUrl` no `tsconfig`, mas o TypeScript 6 trata

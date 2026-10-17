@@ -15,9 +15,9 @@ Cada linha só é marcada quando o teste que a prova existe e passa.
 
 | | Requisito | Como é atendido | Prova |
 | - | --------- | --------------- | ----- |
-| [ ] | Cadastro com nome, e-mail e senha | `POST /api/auth/signup` | teste HTTP de auth |
-| [ ] | Login com e-mail e senha | `POST /api/auth/login`, sessão em cookie | teste HTTP de auth |
-| [ ] | Só usuários autenticados acessam | Toda rota fora de `/api/auth/*` e da documentação responde 401 sem sessão; o front redireciona para `/entrar` | teste HTTP de auth |
+| [x] | Cadastro com nome, e-mail e senha | `POST /api/auth/signup` | `AuthApiTests`, `auth.test.tsx` |
+| [x] | Login com e-mail e senha | `POST /api/auth/login`, sessão em cookie | `AuthApiTests`, `auth.test.tsx` |
+| [x] | Só usuários autenticados acessam | Toda rota fora do cadastro, do login, do logout e da documentação responde 401 sem sessão; o front redireciona para `/entrar` | `AuthApiTests`, `auth.test.tsx` |
 | [ ] | Criar pedido (cliente, itens, endereço) | `POST /api/orders` | teste HTTP de pedidos |
 | [ ] | Atualizar o status (`RECEBIDO`, `EM_PREPARO`, `SAIU_PARA_ENTREGA`, `ENTREGUE`, `CANCELADO`) | `PATCH /api/orders/{id}/status`, com as regras de transição | testes de domínio e HTTP de pedidos |
 | [ ] | Listar todos os pedidos e buscar por ID | `GET /api/orders`, `GET /api/orders/{id}` | teste HTTP de pedidos |

@@ -15,3 +15,10 @@ management:
     web:
       exposure:
         include: health
+
+app:
+  auth:
+    # Production sets APP_AUTH_JWT_SECRET; blank uses a random key per run.
+    jwt-secret: ''
+    session-ttl: 8h
+    cookie-secure: false
