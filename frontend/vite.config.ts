@@ -14,7 +14,8 @@ export default defineConfig({
   server: {
     // Same-origin /api keeps the session cookie first-party (docs/DECISIONS.md).
     proxy: {
-      '/api': 'http://localhost:8080',
+      // 127.0.0.1, not localhost: the API listens on IPv4 only, and localhost may resolve to ::1.
+      '/api': 'http://127.0.0.1:8080',
     },
   },
   test: {

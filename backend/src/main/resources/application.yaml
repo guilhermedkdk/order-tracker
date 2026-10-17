@@ -1,3 +1,7 @@
+server:
+  # Local runs stay off the network; containers set SERVER_ADDRESS=0.0.0.0 (docs/DECISIONS.md).
+  address: 127.0.0.1
+
 spring:
   application:
     name: order-tracker

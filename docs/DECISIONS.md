@@ -3,6 +3,16 @@
 Log append-only, com a entrada mais nova no topo. Cada entrada registra o que uma sessão futura faria
 errado sem ela.
 
+### 2026-10-17 - API local escuta só no 127.0.0.1
+
+**Armadilha:** por padrão o Tomcat escuta em todos os endereços, o que expõe a API de desenvolvimento a
+qualquer máquina da mesma rede e faz o Firewall do Windows perguntar se libera o `java.exe`.
+**Regra:** `server.address` é `127.0.0.1`, e o proxy do Vite aponta para `127.0.0.1:8080` (não para
+`localhost`, que pode resolver para `::1`). Imagem Docker e Render definem `SERVER_ADDRESS=0.0.0.0`,
+senão a API fica inacessível dentro do container.
+**Onde:** `backend/src/main/resources/application.yaml`, `frontend/vite.config.ts`, `backend/Dockerfile`
+(fase 2).
+
 ### 2026-10-17 - Testes HTTP passam pelo CSRF de verdade
 
 **Armadilha:** o atalho do Spring Security é `with(csrf())`, que injeta um token válido e deixa o
