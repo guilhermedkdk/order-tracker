@@ -290,6 +290,14 @@ public class OrderApiTests {
         assertThat(find).bodyJson().extractingPath("$.detail").isEqualTo("Valor inválido para id.");
     }
 
+    @Test
+    void anUnknownRouteAnswersInPortuguese() {
+        var missing = accounts.owner("Ana Souza").get("/api/nada");
+
+        assertThat(missing).hasStatus(HttpStatus.NOT_FOUND);
+        assertThat(missing).bodyJson().extractingPath("$.detail").isEqualTo("Rota não encontrada.");
+    }
+
     static MvcTestResult changeStatus(ApiSession session, String orderId, String json) {
         return session.patch("/api/orders/" + orderId + "/status", json);
     }
@@ -301,7 +309,7 @@ public class OrderApiTests {
     }
 
     // 2 x 45.90 + 7.00 of delivery = 98.80
-    static String orderJson(String restaurantId) {
+    public static String orderJson(String restaurantId) {
         return """
                 {
                   "restaurantId": "%s",

@@ -2,6 +2,7 @@ import { screen } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
 import {
+  admin,
   ana,
   burger,
   orderDetails,
@@ -123,6 +124,21 @@ describe('new order', () => {
 
     await screen.findByText('Nenhum pedido ainda. Os novos aparecem aqui.')
     expect(sent).toMatchObject({ restaurantId: burger.id })
+  })
+
+  it('names each restaurant with its owner when the admin picks one', async () => {
+    server.use(
+      signedInAs(admin),
+      http.get('/api/restaurants', () =>
+        HttpResponse.json([burger, { ...burger, id: 'outro-burger', ownerName: 'Ana Souza' }]),
+      ),
+    )
+    const { user } = renderAt('/pedidos/novo')
+
+    const picker = await screen.findByLabelText('Restaurante', { selector: '#restaurant' })
+    await user.selectOptions(picker, 'Burger da Vila · Ana Souza')
+
+    expect(picker).toHaveValue('outro-burger')
   })
 
   it('adds and removes items, updating the total', async () => {

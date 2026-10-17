@@ -3,6 +3,15 @@
 Log append-only, com a entrada mais nova no topo. Cada entrada registra o que uma sessão futura faria
 errado sem ela.
 
+### 2026-10-17 - Base de clientes gravada por upsert nativo
+
+**Armadilha:** o jeito JPA de "buscar e salvar" o cliente corre: dois primeiros pedidos do mesmo
+telefone ao mesmo tempo tentam inserir os dois, um bate na unique e derruba a criação do pedido.
+**Regra:** o cliente só é gravado por `CustomerRepository.upsert`, um `insert ... on conflict do update`
+do Postgres que só sobrescreve quando o pedido é mais novo (`last_order_at`). O id do cliente é UUID
+v4, porque o insert nativo não passa pelo gerador do Hibernate, e ele nunca sai da API.
+**Onde:** `backend/.../customer/CustomerRepository.java`, `V4__create_customers.sql`.
+
 ### 2026-10-17 - Dados de demonstração passam pelo domínio
 
 **Armadilha:** o caminho comum é um SQL de seed, que grava totais e histórico à mão e deixa de bater

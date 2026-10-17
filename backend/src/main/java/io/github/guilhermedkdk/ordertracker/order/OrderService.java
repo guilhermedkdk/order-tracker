@@ -1,6 +1,8 @@
 package io.github.guilhermedkdk.ordertracker.order;
 
 import io.github.guilhermedkdk.ordertracker.auth.CurrentUser;
+import io.github.guilhermedkdk.ordertracker.customer.CustomerAddress;
+import io.github.guilhermedkdk.ordertracker.customer.CustomerBook;
 import io.github.guilhermedkdk.ordertracker.restaurant.RestaurantScope;
 import io.github.guilhermedkdk.ordertracker.restaurant.RestaurantService;
 import io.github.guilhermedkdk.ordertracker.shared.NotFoundException;
@@ -24,11 +26,13 @@ public class OrderService {
 
     private final OrderRepository orders;
     private final RestaurantService restaurants;
+    private final CustomerBook customers;
     private final Clock clock;
 
-    OrderService(OrderRepository orders, RestaurantService restaurants, Clock clock) {
+    OrderService(OrderRepository orders, RestaurantService restaurants, CustomerBook customers, Clock clock) {
         this.orders = orders;
         this.restaurants = restaurants;
+        this.customers = customers;
         this.clock = clock;
     }
 
@@ -36,6 +40,7 @@ public class OrderService {
     public OrderView create(CurrentUser user, NewOrder data) {
         restaurants.requireVisible(restaurants.scopeOf(user), data.restaurantId());
         Order order = orders.save(Order.create(data, authorOf(user), clock.instant()));
+        rememberCustomer(order);
         return view(order);
     }
 
@@ -90,6 +95,24 @@ public class OrderService {
     private OrderView view(Order order) {
         return new OrderView(
                 order, restaurants.namesOf(List.of(order.restaurantId())).get(order.restaurantId()));
+    }
+
+    /** Feeds the restaurant's customer base, which only fills the next order of the same phone. */
+    public void rememberCustomer(Order order) {
+        DeliveryAddress address = order.deliveryAddress();
+        customers.remember(
+                order.restaurantId(),
+                order.customer().name(),
+                order.customer().phone(),
+                new CustomerAddress(
+                        address.cep(),
+                        address.street(),
+                        address.number(),
+                        address.complement(),
+                        address.neighborhood(),
+                        address.city(),
+                        address.state()),
+                order.createdAt());
     }
 
     private static Author authorOf(CurrentUser user) {

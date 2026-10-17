@@ -8,6 +8,7 @@ import io.github.guilhermedkdk.ordertracker.order.NewOrder;
 import io.github.guilhermedkdk.ordertracker.order.Order;
 import io.github.guilhermedkdk.ordertracker.order.OrderCustomer;
 import io.github.guilhermedkdk.ordertracker.order.OrderRepository;
+import io.github.guilhermedkdk.ordertracker.order.OrderService;
 import io.github.guilhermedkdk.ordertracker.order.OrderStatus;
 import io.github.guilhermedkdk.ordertracker.restaurant.RestaurantService;
 import java.time.Clock;
@@ -40,12 +41,19 @@ class DemoData {
     private final UserDirectory users;
     private final RestaurantService restaurants;
     private final OrderRepository orders;
+    private final OrderService orderService;
     private final Clock clock;
 
-    DemoData(UserDirectory users, RestaurantService restaurants, OrderRepository orders, Clock clock) {
+    DemoData(
+            UserDirectory users,
+            RestaurantService restaurants,
+            OrderRepository orders,
+            OrderService orderService,
+            Clock clock) {
         this.users = users;
         this.restaurants = restaurants;
         this.orders = orders;
+        this.orderService = orderService;
         this.clock = clock;
     }
 
@@ -86,7 +94,8 @@ class DemoData {
         Instant now = clock.instant();
         for (DemoScript.DemoOrder sample : DemoScript.ORDERS) {
             CurrentUser owner = sample.restaurant().equals(DemoScript.SUSHI) ? juliana : rafael;
-            orders.save(play(sample, restaurantIds.get(sample.restaurant()), owner, now));
+            Order order = orders.save(play(sample, restaurantIds.get(sample.restaurant()), owner, now));
+            orderService.rememberCustomer(order);
         }
     }
 

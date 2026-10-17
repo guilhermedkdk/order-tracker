@@ -5,7 +5,7 @@ import { useLocation, useNavigate } from 'react-router'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field'
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Textarea } from '@/components/ui/textarea'
@@ -14,6 +14,7 @@ import { formatMoney } from '@/lib/format'
 import { showApiError } from '@/lib/form-errors'
 import { paymentMethodSchema, useCreateOrder } from './api'
 import { ItemsFields } from './ItemsFields'
+import { useCustomerAutofill } from './useCustomerAutofill'
 import { PAYMENT_LABEL } from './labels'
 import {
   apiFieldPaths,
@@ -24,6 +25,12 @@ import {
   type NewOrderBody,
   type OrderFormInput,
 } from './order-form'
+
+const CUSTOMER_HINT = {
+  idle: undefined,
+  found: 'Cliente encontrado: preenchemos os campos vazios com o último pedido.',
+  new: 'Cliente novo neste restaurante.',
+} as const
 
 export function NewOrderPage() {
   const { selection, restaurants } = useSelectedRestaurant()
@@ -48,6 +55,7 @@ export function NewOrderPage() {
     name: ['items', 'deliveryFee', 'payment.method'],
   })
   const totals = previewTotals({ items, deliveryFee })
+  const customerLookup = useCustomerAutofill(form)
 
   const onSubmit = form.handleSubmit(async (body) => {
     try {
@@ -83,7 +91,7 @@ export function NewOrderPage() {
                   <NativeSelectOption value="">Escolha o restaurante</NativeSelectOption>
                   {restaurants.map((restaurant) => (
                     <NativeSelectOption key={restaurant.id} value={restaurant.id}>
-                      {restaurant.name}
+                      {restaurant.name} · {restaurant.ownerName}
                     </NativeSelectOption>
                   ))}
                 </NativeSelect>
@@ -93,21 +101,26 @@ export function NewOrderPage() {
 
           <Section title="Cliente">
             <div className="grid gap-4 sm:grid-cols-2">
-              <Labeled id="customer-name" label="Nome do cliente" error={errors.customer?.name}>
-                <Input
-                  id="customer-name"
-                  autoComplete="off"
-                  aria-invalid={!!errors.customer?.name}
-                  {...form.register('customer.name')}
-                />
-              </Labeled>
-              <Labeled id="customer-phone" label="Telefone" error={errors.customer?.phone}>
+              <Labeled
+                id="customer-phone"
+                label="Telefone"
+                error={errors.customer?.phone}
+                description={CUSTOMER_HINT[customerLookup]}
+              >
                 <Input
                   id="customer-phone"
                   type="tel"
                   placeholder="(11) 98765-4321"
                   aria-invalid={!!errors.customer?.phone}
                   {...form.register('customer.phone')}
+                />
+              </Labeled>
+              <Labeled id="customer-name" label="Nome do cliente" error={errors.customer?.name}>
+                <Input
+                  id="customer-name"
+                  autoComplete="off"
+                  aria-invalid={!!errors.customer?.name}
+                  {...form.register('customer.name')}
                 />
               </Labeled>
             </div>
@@ -312,12 +325,14 @@ function Labeled({
   id,
   label,
   error,
+  description,
   className,
   children,
 }: {
   id: string
   label: string
   error: FormFieldError | undefined
+  description?: string
   className?: string
   children: ReactNode
 }) {
@@ -325,6 +340,7 @@ function Labeled({
     <Field data-invalid={!!error} className={className}>
       <FieldLabel htmlFor={id}>{label}</FieldLabel>
       {children}
+      {description && <FieldDescription>{description}</FieldDescription>}
       <FieldError errors={[error]} />
     </Field>
   )
