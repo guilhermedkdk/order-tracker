@@ -3,6 +3,15 @@
 Log append-only, com a entrada mais nova no topo. Cada entrada registra o que uma sessão futura faria
 errado sem ela.
 
+### 2026-10-17 - Proxy na frente da API repassa o host original
+
+**Armadilha:** atrás do nginx (e, em produção, do rewrite da Vercel), a API enxerga o próprio endereço
+interno. Sem `X-Forwarded-Host`, o Swagger anunciava `http://localhost` sem a porta, e o "Try it out"
+mandava as chamadas para o lugar errado.
+**Regra:** o proxy manda `Host`, `X-Forwarded-Proto` e `X-Forwarded-Host`, e a API roda com
+`SERVER_FORWARD_HEADERS_STRATEGY=framework` sempre que estiver atrás de um proxy.
+**Onde:** `frontend/nginx.conf`, `docker-compose.yml`, variáveis do Render.
+
 ### 2026-10-17 - CEP preenche pelo evento do campo, não por observar o valor
 
 **Armadilha:** observar o CEP com `useWatch` dispararia o ViaCEP também quando a base de clientes

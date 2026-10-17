@@ -48,6 +48,18 @@ pnpm dev
 Abra http://localhost:5173. O Vite repassa `/api` para a API, então o navegador fala com uma origem
 só.
 
+### Só com Docker
+
+Sem Java nem Node instalados, da raiz do repositório:
+
+```bash
+docker compose up --build
+```
+
+O app fica em http://localhost:8081 e o Swagger em http://localhost:8081/swagger-ui.html. O nginx
+serve o front e repassa `/api` para a API, como a Vercel faz em produção. A primeira subida demora
+alguns minutos, porque compila a API e o front dentro dos containers.
+
 ### Contas de demonstração
 
 Todas com a senha `demo1234`. A tela de login também tem os botões "Entrar como dono" e "Entrar como
