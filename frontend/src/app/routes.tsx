@@ -1,14 +1,17 @@
-import type { RouteObject } from 'react-router'
+import { redirect, type RouteObject } from 'react-router'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { RequireAuth } from '@/features/auth/RequireAuth'
 import { SignupPage } from '@/features/auth/SignupPage'
+import { NewOrderPage } from '@/features/orders/NewOrderPage'
+import { OrdersPage } from '@/features/orders/OrdersPage'
 import { NewRestaurantPage } from '@/features/restaurants/NewRestaurantPage'
 import { RequireRestaurant } from '@/features/restaurants/RequireRestaurant'
 import { AppShell } from './AppShell'
-import { HomePage } from './HomePage'
 
 /** Every screen of the app. The browser router in `main.tsx` and the tests both use this list. */
 export const routes: RouteObject[] = [
+  // "/" is the order list; ?restaurante= comes along.
+  { path: '/', loader: ({ request }) => redirect(`/pedidos${new URL(request.url).search}`) },
   { path: '/entrar', Component: LoginPage },
   { path: '/cadastro', Component: SignupPage },
   {
@@ -18,7 +21,13 @@ export const routes: RouteObject[] = [
         Component: AppShell,
         children: [
           { path: '/restaurantes/novo', Component: NewRestaurantPage },
-          { Component: RequireRestaurant, children: [{ index: true, Component: HomePage }] },
+          {
+            Component: RequireRestaurant,
+            children: [
+              { path: '/pedidos', Component: OrdersPage },
+              { path: '/pedidos/novo', Component: NewOrderPage },
+            ],
+          },
         ],
       },
     ],

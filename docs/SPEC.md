@@ -22,7 +22,7 @@ Cada linha só é marcada quando o teste que a prova existe e passa.
 | [x] | Atualizar o status (`RECEBIDO`, `EM_PREPARO`, `SAIU_PARA_ENTREGA`, `ENTREGUE`, `CANCELADO`) | `PATCH /api/orders/{id}/status`, com as regras de transição | `OrderTests`, `OrderApiTests` |
 | [x] | Listar todos os pedidos e buscar por ID | `GET /api/orders`, `GET /api/orders/{id}` | `OrderApiTests` |
 | [x] | Persistência em SQLite ou similar | Postgres com Flyway | todos os testes HTTP, com Postgres real via Testcontainers |
-| [ ] | React lista pedidos com status atual e cria pedido | Telas `/pedidos` e `/pedidos/novo` | testes do front |
+| [x] | React lista pedidos com status atual e cria pedido | Telas `/pedidos` e `/pedidos/novo` | `orders.test.tsx`, `new-order.test.tsx` |
 | [ ] | Repositório Git com histórico | Um PR por fase, commits por passo | histórico no GitHub |
 
 ## Papéis e visibilidade

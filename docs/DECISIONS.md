@@ -3,6 +3,14 @@
 Log append-only, com a entrada mais nova no topo. Cada entrada registra o que uma sessão futura faria
 errado sem ela.
 
+### 2026-10-17 - Valores em reais são campos de texto
+
+**Armadilha:** `<input type="number">` não aceita vírgula em vários navegadores e devolve vazio para
+"45,90", que é como qualquer pessoa no Brasil digita um preço.
+**Regra:** preço, taxa e troco são campos de texto com `inputMode="decimal"`, e o schema do formulário
+converte "45,90" ou "45.90" em número antes de mandar para a API, que só recebe números.
+**Onde:** `frontend/src/features/orders/order-form.ts`.
+
 ### 2026-10-17 - Itens e histórico do pedido são coleções ordenadas
 
 **Armadilha:** sem `@OrderColumn`, o Hibernate trata uma `@ElementCollection` como saco e, a cada
