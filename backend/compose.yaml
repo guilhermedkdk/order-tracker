@@ -1,0 +1,9 @@
+services:
+  postgres:
+    image: 'postgres:17-alpine'
+    environment:
+      - 'POSTGRES_DB=order_tracker'
+      - 'POSTGRES_USER=order_tracker'
+      - 'POSTGRES_PASSWORD=order_tracker'
+    ports:
+      - '5432'
