@@ -1,5 +1,7 @@
 # Rastreador de pedidos
 
+[![CI](https://github.com/guilhermedkdk/order-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/guilhermedkdk/order-tracker/actions/workflows/ci.yml)
+
 Mini rastreador de pedidos de delivery, feito para um desafio técnico. Restaurantes registram pedidos
 e acompanham cada um do recebimento à entrega. API em Java 25 com Spring Boot 4.1, front em React com
 TypeScript e banco Postgres.
