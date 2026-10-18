@@ -1,4 +1,6 @@
 server:
+  # Render picks the port through PORT; everywhere else it is 8080.
+  port: ${PORT:8080}
   # Local runs stay off the network; containers set SERVER_ADDRESS=0.0.0.0 (docs/DECISIONS.md).
   address: 127.0.0.1
 
