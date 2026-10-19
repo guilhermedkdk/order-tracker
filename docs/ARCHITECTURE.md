@@ -100,7 +100,7 @@ de todos em `src/lib/` e `src/components/ui/` (componentes do shadcn/ui).
 | `lib/format.ts` | Dinheiro em reais, datas no fuso de São Paulo, código do pedido, máscaras de telefone e CEP. |
 | `features/auth/` | Login, cadastro, botões de conta demo, `useMe` e logout. |
 | `features/restaurants/` | Seletor de restaurante, criação do primeiro restaurante e o restaurante selecionado, que vive na URL (`?restaurante=`). |
-| `features/orders/` | Lista com filtro e paginação, detalhe com linha do tempo, formulário de novo pedido, ações de status e os rótulos em português dos enums. Na fase 3, o kanban. |
+| `features/orders/` | Lista com filtro e paginação, detalhe com linha do tempo, formulário de novo pedido, kanban com arrastar entre colunas, ações de status e os rótulos em português dos enums. |
 | `features/customers/` | A busca do cliente pelo telefone, usada pelo formulário de pedido. |
 | `features/demo/` | O botão de restaurar demonstração. |
 

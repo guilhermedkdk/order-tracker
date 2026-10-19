@@ -129,5 +129,6 @@ O desenvolvimento segue em três fases, cada uma num PR (ordem completa no [SPEC
 
 1. **Fase 1, o obrigatório:** esta versão.
 2. **Fase 2:** detalhe do pedido com linha do tempo, filtro e paginação na tela, base de clientes com
-   preenchimento pelo telefone, endereço pelo CEP, Docker Compose completo, CI e deploy.
-3. **Fase 3:** atualização em tempo real por SSE, kanban e refresh token com rotação.
+   preenchimento pelo telefone, endereço pelo CEP, Docker Compose completo, CI, repaginação visual,
+   kanban e deploy.
+3. **Fase 3:** atualização em tempo real por SSE e refresh token com rotação.
