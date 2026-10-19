@@ -1,4 +1,11 @@
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  keepPreviousData,
+  queryOptions,
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 import { z } from 'zod'
 import { api } from '@/lib/http'
 import type { NewOrderBody } from './order-form'
@@ -75,6 +82,7 @@ const orderSchema = orderSummarySchema.omit({ customerName: true, neighborhood: 
 })
 
 export type OrderSummary = z.infer<typeof orderSummarySchema>
+export type OrderPage = z.infer<typeof orderPageSchema>
 export type Order = z.infer<typeof orderSchema>
 
 /** What the status actions need, which both a list entry and a full order have. */
@@ -82,21 +90,39 @@ export type OrderActionTarget = Pick<OrderSummary, 'id' | 'code' | 'allowedNextS
 
 const ordersKey = ['orders'] as const
 
+type OrderListParams = { restaurantId?: string; status?: OrderStatus; page: number }
+
 /**
  * One page (counted from 1) of the newest orders, of one restaurant or of every visible one when
  * `restaurantId` is absent, optionally of one status. The previous page stays on screen while the
  * next one loads.
  */
-export function useOrders({
-  restaurantId,
-  status,
-  page,
-}: {
-  restaurantId?: string
-  status?: OrderStatus
-  page: number
-}) {
-  return useQuery({
+export function useOrders(params: OrderListParams) {
+  return useQuery(orderListQuery(params))
+}
+
+/**
+ * The board: the first page of every status at once, in the order of the statuses. Each column
+ * keeps its own total, so a column shows the newest orders and how many there are.
+ */
+export function useOrderBoard({ restaurantId }: { restaurantId?: string }) {
+  return useQueries({
+    queries: orderStatusSchema.options.map((status) =>
+      orderListQuery({ restaurantId, status, page: 1 }),
+    ),
+    combine: (results) => ({
+      columns: orderStatusSchema.options.map((status, index) => ({
+        status,
+        page: results[index]?.data,
+      })),
+      isPending: results.some((result) => result.isPending),
+      error: results.find((result) => result.error)?.error ?? null,
+    }),
+  })
+}
+
+function orderListQuery({ restaurantId, status, page }: OrderListParams) {
+  return queryOptions({
     queryKey: [...ordersKey, 'list', { restaurantId, status, page }],
     queryFn: () => {
       const search = new URLSearchParams({ page: String(page - 1) })

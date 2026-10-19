@@ -34,7 +34,7 @@ async function fillRequiredFields(user: ReturnType<typeof renderAt>['user']) {
 }
 
 describe('new order', () => {
-  it('registers an order, previewing the total, and goes back to the list', async () => {
+  it('registers an order, previewing the total, and goes back to the board', async () => {
     const orders: ReturnType<typeof orderSummary>[] = []
     let sent: unknown = null
     server.use(
@@ -56,7 +56,7 @@ describe('new order', () => {
     expect(screen.getByText('R$ 98,80')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Registrar pedido' }))
 
-    expect(await screen.findByRole('row', { name: /00C0DE11/ })).toBeInTheDocument()
+    expect(await screen.findByRole('article', { name: 'Pedido #00C0DE11' })).toBeInTheDocument()
     expect(sent).toEqual({
       restaurantId: pizzaria.id,
       customer: { name: 'Maria Silva', phone: '11987654321' },
@@ -123,7 +123,7 @@ describe('new order', () => {
     await choose({ user, label: 'Restaurante selecionado', option: 'Burger da Vila' })
     await user.click(screen.getByRole('button', { name: 'Registrar pedido' }))
 
-    await screen.findByText('Nenhum pedido ainda.')
+    await screen.findByRole('region', { name: 'Recebido' })
     expect(sent).toMatchObject({ restaurantId: burger.id })
   })
 

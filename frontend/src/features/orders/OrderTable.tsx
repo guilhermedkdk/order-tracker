@@ -101,7 +101,7 @@ export function OrderTable({
                       <StatusBadge status={order.status} />
                     </TableCell>
                     <TableCell className="relative z-10 pr-4">
-                      <StatusActions order={order} layout="menu" />
+                      <StatusActions order={order} layout="row" />
                     </TableCell>
                   </TableRow>
                 ))}
