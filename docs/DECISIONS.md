@@ -10,7 +10,9 @@ criar repetições automáticas no front. Não é preciso: a Vercel espera até 
 rewrite, e o Render acorda em menos de um minuto, então a tela "Carregando…" cobre a espera.
 **Regra:** `frontend/vercel.json` repassa `/api` e o Swagger ao Render, como o nginx faz no Compose, e é
 o único lugar com o endereço do Render. A tela de servidor fora do ar só aparece quando a API não
-responde de fato, com um botão para tentar de novo.
+responde de fato, com um botão para tentar de novo. Um `/:path*` da Vercel também casa o caminho sem
+nada depois e o repassa com barra no fim, que a API responde com 404; por isso `/v3/api-docs` tem
+regra própria antes da genérica.
 **Onde:** `frontend/vercel.json`, `frontend/src/components/PageUnreachable.tsx`.
 
 ### 2026-10-19 - Telefone e CEP preenchem pelo mesmo registro

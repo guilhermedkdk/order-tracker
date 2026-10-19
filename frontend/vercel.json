@@ -14,6 +14,10 @@
       "destination": "https://order-tracker-lulc.onrender.com/swagger-ui/:path*"
     },
     {
+      "source": "/v3/api-docs",
+      "destination": "https://order-tracker-lulc.onrender.com/v3/api-docs"
+    },
+    {
       "source": "/v3/api-docs/:path*",
       "destination": "https://order-tracker-lulc.onrender.com/v3/api-docs/:path*"
     },
