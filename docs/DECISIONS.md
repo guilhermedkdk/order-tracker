@@ -3,6 +3,16 @@
 Log append-only, com a entrada mais nova no topo. Cada entrada registra o que uma sessão futura faria
 errado sem ela.
 
+### 2026-10-19 - Escrita sem token CSRF não sai do navegador
+
+**Armadilha:** o Render gratuito levou 83 s para acordar numa medição, perto dos 120 s que a Vercel
+espera. Quando passa, a busca do cookie de CSRF em `/api/auth/me` volta sem cookie, e o login saía
+sem o token: a API respondia "Token CSRF ausente", uma mensagem que ninguém consegue resolver.
+**Regra:** `http.ts` não envia escrita sem o token CSRF. Sem ele, responde que não conseguiu falar com o
+servidor, e a próxima tentativa, com a API já acordada, funciona. As telas avisam que acordar leva um
+ou dois minutos. Os testes começam com o cookie `XSRF-TOKEN` já definido, porque o MSW não grava cookie.
+**Onde:** `frontend/src/lib/http.ts`, `frontend/src/test/setup.ts`.
+
 ### 2026-10-19 - Stream de pedidos que reconecta a cada 100 segundos
 
 **Armadilha:** a Vercel corta qualquer requisição repassada aos 120 s, e um `SseEmitter` sem prazo
@@ -43,7 +53,7 @@ Vercel, o Compose ou a máquina local. Isso tira do `X-Forwarded-Host` o papel q
 
 **Armadilha:** parece que a primeira visita depois do repouso do Render daria erro, e que valeria
 criar repetições automáticas no front. Não é preciso: a Vercel espera até 120 s pela resposta de um
-rewrite, e o Render acorda em menos de um minuto, então a tela "Carregando…" cobre a espera.
+rewrite, e o Render costuma acordar antes disso, então a tela "Carregando…" cobre a espera.
 **Regra:** `frontend/vercel.json` repassa `/api` e o Swagger ao Render, como o nginx faz no Compose, e é
 o único lugar com o endereço do Render. A tela de servidor fora do ar só aparece quando a API não
 responde de fato, com um botão para tentar de novo. Um `/:path*` da Vercel também casa o caminho sem

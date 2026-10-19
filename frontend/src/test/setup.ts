@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom/vitest'
 import { cleanup, configure } from '@testing-library/react'
-import { afterAll, afterEach, beforeAll } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach } from 'vitest'
 import { closeAllStreams, FakeEventSource } from './event-source'
 import { server } from './server'
 import { resetTab } from './tab'
@@ -24,6 +24,11 @@ Object.assign(Element.prototype, {
 })
 
 beforeAll(() => server.listen({ onUnhandledFrame: 'error' }))
+
+// The fake API sets no cookies, so each test starts as if the real one had handed out its CSRF token.
+beforeEach(() => {
+  document.cookie = 'XSRF-TOKEN=token-de-teste'
+})
 
 afterEach(() => {
   cleanup()

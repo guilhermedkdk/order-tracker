@@ -141,9 +141,12 @@ async function send({
   }
   if (method !== 'GET') {
     const token = await csrfToken()
-    if (token) {
-      headers.set(CSRF_HEADER, token)
+    // No token means the API never answered, as on a cold start past the proxy's limit. Sending the
+    // write anyway would only earn a CSRF refusal nobody can act on.
+    if (!token) {
+      throw new ApiError({ status: 0, message: UNREACHABLE })
     }
+    headers.set(CSRF_HEADER, token)
   }
   try {
     return await fetch(apiUrl(path), {

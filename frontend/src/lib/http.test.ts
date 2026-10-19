@@ -21,6 +21,26 @@ describe('api', () => {
     expect(received).toBe('token-123')
   })
 
+  it('does not send a write without the CSRF token, and says the server did not answer', async () => {
+    document.cookie = 'XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 GMT'
+    let sent = false
+    server.use(
+      // As when the API takes too long to wake and the proxy gives up: no cookie comes back.
+      http.get('/api/auth/me', () => new HttpResponse(null, { status: 504 })),
+      http.post('/api/things', () => {
+        sent = true
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+
+    const failure = api({ path: '/things', method: 'POST', body: {}, schema: z.undefined() })
+
+    await expect(failure).rejects.toEqual(
+      new ApiError({ status: 0, message: 'Não foi possível falar com o servidor. Tente de novo.' }),
+    )
+    expect(sent).toBe(false)
+  })
+
   it('turns Problem Details into an ApiError with the field messages', async () => {
     server.use(
       http.post('/api/things', () =>
