@@ -3,6 +3,16 @@
 Log append-only, com a entrada mais nova no topo. Cada entrada registra o que uma sessão futura faria
 errado sem ela.
 
+### 2026-10-19 - Em produção, a Vercel é o proxy da API
+
+**Armadilha:** parece que a primeira visita depois do repouso do Render daria erro, e que valeria
+criar repetições automáticas no front. Não é preciso: a Vercel espera até 120 s pela resposta de um
+rewrite, e o Render acorda em menos de um minuto, então a tela "Carregando…" cobre a espera.
+**Regra:** `frontend/vercel.json` repassa `/api` e o Swagger ao Render, como o nginx faz no Compose, e é
+o único lugar com o endereço do Render. A tela de servidor fora do ar só aparece quando a API não
+responde de fato, com um botão para tentar de novo.
+**Onde:** `frontend/vercel.json`, `frontend/src/components/PageUnreachable.tsx`.
+
 ### 2026-10-19 - Telefone e CEP preenchem pelo mesmo registro
 
 **Armadilha:** cada preenchimento olhando só para campos vazios, ou só para o que ele mesmo pôs,

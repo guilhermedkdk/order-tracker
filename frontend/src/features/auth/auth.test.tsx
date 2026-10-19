@@ -16,6 +16,25 @@ describe('authentication', () => {
     expect(await screen.findByRole('heading', { name: 'Entrar' })).toBeInTheDocument()
   })
 
+  it('offers to try again when the server does not answer', async () => {
+    let up = false
+    server.use(
+      http.get('/api/auth/me', () => (up ? HttpResponse.json(ana) : HttpResponse.error())),
+      noRestaurants,
+    )
+    const { user } = renderAt('/')
+
+    expect(
+      await screen.findByRole('heading', { name: 'Não conseguimos falar com o servidor' }),
+    ).toBeInTheDocument()
+    up = true
+    await user.click(screen.getByRole('button', { name: 'Tentar de novo' }))
+
+    expect(
+      await screen.findByRole('heading', { name: 'Crie seu primeiro restaurante' }),
+    ).toBeInTheDocument()
+  })
+
   it('logs in and lands inside the app', async () => {
     server.use(
       noSession,

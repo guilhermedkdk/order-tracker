@@ -1,5 +1,6 @@
 import { Navigate, Outlet, useLocation } from 'react-router'
 import { PageLoading } from '@/components/PageLoading'
+import { PageUnreachable } from '@/components/PageUnreachable'
 import { useMe } from './api'
 
 /** Lets the nested routes render only with a session; otherwise sends the person to login. */
@@ -11,7 +12,7 @@ export function RequireAuth() {
     return <PageLoading />
   }
   if (me.isError) {
-    return <p className="p-6 text-destructive">{me.error.message}</p>
+    return <PageUnreachable onRetry={() => me.refetch()} retrying={me.isFetching} />
   }
   if (me.data === null) {
     return <Navigate to="/entrar" replace state={{ from: location.pathname + location.search }} />
