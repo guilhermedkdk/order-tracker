@@ -109,7 +109,8 @@ describe('order list', () => {
     const { user } = renderAt(`/pedidos?restaurante=${pizzaria.id}`)
 
     const row = await screen.findByRole('row', { name: /00C0DE11/ })
-    await user.click(within(row).getByRole('button', { name: 'Cancelar' }))
+    await user.click(within(row).getByRole('button', { name: 'Mais ações do pedido #00C0DE11' }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Cancelar pedido' }))
     const dialog = await screen.findByRole('dialog', { name: 'Cancelar o pedido #00C0DE11' })
     await choose({ user, label: 'Motivo', option: 'Cliente desistiu' })
     await user.click(within(dialog).getByRole('button', { name: 'Confirmar cancelamento' }))
@@ -127,7 +128,8 @@ describe('order list', () => {
     const { user } = renderAt(`/pedidos?restaurante=${pizzaria.id}`)
 
     const row = await screen.findByRole('row', { name: /00C0DE11/ })
-    await user.click(within(row).getByRole('button', { name: 'Cancelar' }))
+    await user.click(within(row).getByRole('button', { name: 'Mais ações do pedido #00C0DE11' }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Cancelar pedido' }))
     const dialog = await screen.findByRole('dialog')
     await choose({ user, label: 'Motivo', option: 'Outro motivo' })
     await user.click(within(dialog).getByRole('button', { name: 'Confirmar cancelamento' }))

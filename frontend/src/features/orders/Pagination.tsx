@@ -1,3 +1,4 @@
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 /** Previous and next around "Página 2 de 3 · 45 pedidos". Pages are counted from 1. */
@@ -14,12 +15,13 @@ export function Pagination({
 }) {
   return (
     <nav aria-label="Páginas" className="flex flex-wrap items-center justify-between gap-3">
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-muted-foreground tabular-nums">
         Página {page} de {Math.max(totalPages, 1)} · {totalElements}{' '}
         {totalElements === 1 ? 'pedido' : 'pedidos'}
       </p>
       <div className="flex gap-2">
         <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => onChange(page - 1)}>
+          <ChevronLeft />
           Anterior
         </Button>
         <Button
@@ -29,6 +31,7 @@ export function Pagination({
           onClick={() => onChange(page + 1)}
         >
           Próxima
+          <ChevronRight />
         </Button>
       </div>
     </nav>

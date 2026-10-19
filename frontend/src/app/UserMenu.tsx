@@ -1,5 +1,5 @@
 import { ChevronDown, LogOut, RotateCcw, Store } from 'lucide-react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { Button } from '@/components/ui/button'
 import {
@@ -18,6 +18,7 @@ export function UserMenu({ user }: { user: User }) {
   const logout = useLogout()
   const navigate = useNavigate()
   const [restoring, setRestoring] = useState(false)
+  const trigger = useRef<HTMLButtonElement>(null)
 
   async function signOut() {
     await logout.mutateAsync()
@@ -28,7 +29,7 @@ export function UserMenu({ user }: { user: User }) {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="h-9 gap-2 px-1.5 sm:pr-2.5">
+          <Button ref={trigger} variant="ghost" className="h-9 gap-2 px-1.5 sm:pr-2.5">
             <span
               aria-hidden="true"
               className="flex size-7 items-center justify-center rounded-full bg-foreground text-[0.7rem] font-semibold text-background"
@@ -66,7 +67,9 @@ export function UserMenu({ user }: { user: User }) {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      {user.role === 'ADMIN' && <RestoreDemoDialog open={restoring} onOpenChange={setRestoring} />}
+      {user.role === 'ADMIN' && (
+        <RestoreDemoDialog open={restoring} onOpenChange={setRestoring} returnFocus={trigger} />
+      )}
     </>
   )
 }

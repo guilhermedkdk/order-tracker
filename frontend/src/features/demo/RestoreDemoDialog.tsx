@@ -1,3 +1,4 @@
+import type { RefObject } from 'react'
 import { toast } from 'sonner'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -14,14 +15,17 @@ import { useRestoreDemo } from './api'
 
 /**
  * The admin's way back to a clean demo, after visitors have played with the shared accounts. It
- * opens from the user menu, which closes before the dialog shows, so the open state lives outside.
+ * opens from the user menu, which closes before the dialog shows, so the open state lives outside
+ * and focus goes back to `returnFocus` when it closes.
  */
 export function RestoreDemoDialog({
   open,
   onOpenChange,
+  returnFocus,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
+  returnFocus: RefObject<HTMLElement | null>
 }) {
   const restore = useRestoreDemo()
 
@@ -44,7 +48,12 @@ export function RestoreDemoDialog({
         }
       }}
     >
-      <DialogContent>
+      <DialogContent
+        onCloseAutoFocus={(event) => {
+          event.preventDefault()
+          returnFocus.current?.focus()
+        }}
+      >
         <DialogHeader>
           <DialogTitle>Restaurar a demonstração?</DialogTitle>
           <DialogDescription>
