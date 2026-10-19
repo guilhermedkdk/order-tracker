@@ -90,6 +90,7 @@ export type Order = z.infer<typeof orderSchema>
 export type OrderActionTarget = Pick<OrderSummary, 'id' | 'code' | 'allowedNextStatuses'>
 
 const ordersKey = ['orders'] as const
+const RELOAD_DELAY_MS = 300
 
 type OrderListParams = { restaurantId?: string; status?: OrderStatus; page: number }
 
@@ -150,7 +151,15 @@ export function useOrderUpdates(): void {
   const queryClient = useQueryClient()
 
   useEffect(() => {
-    const reload = () => queryClient.invalidateQueries({ queryKey: ordersKey })
+    let pending: ReturnType<typeof setTimeout> | undefined
+    // A burst of changes, like restoring the demo, reloads once.
+    const reload = () => {
+      clearTimeout(pending)
+      pending = setTimeout(
+        () => void queryClient.invalidateQueries({ queryKey: ordersKey }),
+        RELOAD_DELAY_MS,
+      )
+    }
     let stop: (() => void) | null = null
     const start = () => {
       stop = listen({ path: '/orders/stream', events: { status: reload }, onReconnect: reload })
@@ -160,7 +169,7 @@ export function useOrderUpdates(): void {
         stop?.()
         stop = null
       } else if (!stop) {
-        void reload()
+        reload()
         start()
       }
     }
@@ -171,6 +180,7 @@ export function useOrderUpdates(): void {
     document.addEventListener('visibilitychange', onVisibilityChange)
     return () => {
       document.removeEventListener('visibilitychange', onVisibilityChange)
+      clearTimeout(pending)
       stop?.()
     }
   }, [queryClient])

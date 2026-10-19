@@ -5,6 +5,7 @@ import jakarta.servlet.DispatcherType;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.time.Clock;
+import java.util.List;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import org.slf4j.Logger;
@@ -19,12 +20,12 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtIssuerValidator;
 import org.springframework.security.oauth2.jwt.JwtTimestampValidator;
+import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.web.AuthenticationEntryPoint;
@@ -101,10 +102,12 @@ class SecurityConfig {
         NimbusJwtDecoder decoder = NimbusJwtDecoder.withSecretKey(sessionKey)
                 .macAlgorithm(MacAlgorithm.HS256)
                 .build();
-        // Expiry is read on the application's clock, the same one that stamped the token.
+        // Expiry is read on the application's clock, the same one that stamped the token; the other
+        // default checks, such as the typ header, stay.
         JwtTimestampValidator expiry = new JwtTimestampValidator();
         expiry.setClock(clock);
-        decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(expiry, new JwtIssuerValidator(Sessions.ISSUER)));
+        decoder.setJwtValidator(
+                JwtValidators.createDefaultWithValidators(List.of(expiry, new JwtIssuerValidator(Sessions.ISSUER))));
         return decoder;
     }
 

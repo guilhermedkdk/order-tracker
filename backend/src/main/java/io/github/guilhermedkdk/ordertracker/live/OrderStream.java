@@ -7,6 +7,8 @@ import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import org.springframework.context.event.ContextClosedEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -32,6 +34,8 @@ class OrderStream {
         connections.add(connection);
         emitter.onCompletion(() -> connections.remove(connection));
         emitter.onError(error -> connections.remove(connection));
+        // The planned end of the stream, not an error to log.
+        emitter.onTimeout(emitter::complete);
         // Sends the headers right away, so the browser and the proxies see the stream open.
         send(connection, SseEmitter.event().comment("conectado"));
         return emitter;
@@ -43,6 +47,15 @@ class OrderStream {
             if (connection.scope().includes(change.restaurantId())) {
                 send(connection, SseEmitter.event().name("status").data(change, MediaType.APPLICATION_JSON));
             }
+        }
+    }
+
+    // Published before the graceful shutdown starts waiting for open requests: ending the streams here
+    // lets it finish at once, and the browsers reconnect to the next process.
+    @EventListener(ContextClosedEvent.class)
+    void closeAll() {
+        for (Connection connection : connections) {
+            connection.emitter().complete();
         }
     }
 

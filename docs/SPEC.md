@@ -47,7 +47,8 @@ Cada linha só é marcada quando o teste que a prova existe e passa.
   ainda renova o acesso, para abas que renovam ao mesmo tempo; usado depois disso, ele encerra a sessão
   inteira, porque só uma cópia explica o reuso. Sem uso por 7 dias, a sessão acaba.
 - O front, ao receber 401, renova a sessão uma vez e repete a chamada; se não der, vai para o login.
-- Sair revoga o refresh token e apaga os dois cookies.
+- Sair revoga o refresh token e apaga os dois cookies. Entrar de novo no mesmo navegador encerra a sessão
+  anterior, e uma renovação recusada também apaga os cookies.
 
 ## Pedido
 
@@ -145,7 +146,8 @@ Todo pedido na API traz `id` (UUID), `code`, os totais e `allowedNextStatuses`. 
   limite de 120 da Vercel, e o navegador reconecta.
 - O front fecha a conexão quando a aba vai para segundo plano. Ao voltar, ou ao reconectar, recarrega os
   pedidos, então nenhum evento perdido deixa a tela errada. Se a API recusar o stream, como com o token
-  de acesso vencido, o front renova a sessão e abre o stream de novo.
+  de acesso vencido ou com a API reiniciando, o front renova a sessão e abre o stream de novo, esperando
+  cada vez mais. Vários eventos seguidos recarregam a tela uma vez.
 
 ## Fora da primeira versão
 
