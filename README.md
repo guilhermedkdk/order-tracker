@@ -6,6 +6,15 @@ Mini rastreador de pedidos de delivery, feito para um desafio técnico. Restaura
 e acompanham cada um do recebimento à entrega. API em Java 25 com Spring Boot 4.1, front em React com
 TypeScript e banco Postgres.
 
+## Demo
+
+**https://order-tracker-iota-ruddy.vercel.app**
+
+Na tela de login, use "Entrar como dono" ou "Entrar como admin". A documentação da API fica em
+[/swagger-ui.html](https://order-tracker-iota-ruddy.vercel.app/swagger-ui.html). A API roda no plano
+gratuito do Render e dorme depois de uns 15 minutos sem acesso, então o primeiro acesso depois disso
+leva até um minuto.
+
 ## O que tem
 
 - **Cadastro, login e sessão.** O JWT fica num cookie httpOnly que o JavaScript da página não lê, com
@@ -19,9 +28,15 @@ TypeScript e banco Postgres.
   409. Cada mudança entra no histórico com autor e horário.
 - **Lista e busca.** Pedidos do mais novo para o mais antigo, com filtro por restaurante e status,
   paginação e busca por id. Pedido de outro restaurante responde 404, como se não existisse.
+- **Detalhe e kanban.** Cada pedido tem uma página com itens, pagamento e a linha do tempo do status.
+  Além da lista, um kanban com uma coluna por status, em que o pedido avança arrastando o card.
+- **Preenchimento automático.** O telefone traz o nome e o último endereço de quem já pediu no
+  restaurante, e o CEP preenche rua, bairro, cidade e UF pelo ViaCEP, sem apagar o que foi digitado.
 - **Demonstração.** Contas prontas com três restaurantes e 15 pedidos em todos os status, login de um
   clique e um botão para o admin restaurar os dados de exemplo.
 - **Documentação da API** no Swagger, em português, com login e CSRF funcionando pela própria página.
+- **Docker e CI.** `docker compose up` sobe o sistema inteiro, e o GitHub Actions roda os testes e o
+  build das imagens a cada push.
 
 ## Como rodar
 
@@ -96,6 +111,7 @@ backend/    API Spring Boot, organizada por funcionalidade
   auth/          cadastro, login, JWT no cookie, CSRF e o usuário da requisição
   restaurant/    restaurantes e a regra de quem enxerga o quê (RestaurantScope)
   order/         o agregado Order, com totais, status e histórico, e a API de pedidos
+  customer/      a base de clientes de cada restaurante, que preenche o próximo pedido
   demo/          contas e pedidos de demonstração
   shared/        formato dos erros (Problem Details), paginação e documentação
 frontend/   React + Vite, organizado por funcionalidade em src/features/
@@ -127,8 +143,8 @@ Os documentos em `docs/` contam o porquê de cada parte:
 
 O desenvolvimento segue em três fases, cada uma num PR (ordem completa no [SPEC](docs/SPEC.md)):
 
-1. **Fase 1, o obrigatório:** esta versão.
+1. **Fase 1, o obrigatório:** pronta.
 2. **Fase 2:** detalhe do pedido com linha do tempo, filtro e paginação na tela, base de clientes com
    preenchimento pelo telefone, endereço pelo CEP, Docker Compose completo, CI, repaginação visual,
-   kanban e deploy.
-3. **Fase 3:** atualização em tempo real por SSE e refresh token com rotação.
+   kanban e deploy: pronta, com a demo no ar.
+3. **Fase 3:** atualização em tempo real por SSE, refresh token com rotação e o README final.
