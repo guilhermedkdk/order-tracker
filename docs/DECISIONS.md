@@ -3,6 +3,16 @@
 Log append-only, com a entrada mais nova no topo. Cada entrada registra o que uma sessão futura faria
 errado sem ela.
 
+### 2026-10-19 - Swagger anuncia o servidor como "/"
+
+**Armadilha:** em produção, o proxy do Render entrega à API o próprio host, não o da Vercel, e a Vercel
+não acrescenta header em rewrite. Com o endereço absoluto calculado pelo springdoc, o "Try it out"
+chamava o Render direto, de outro site, sem o cookie de sessão, e tudo dava 401.
+**Regra:** o `OpenAPI` declara o servidor `/`, então o Swagger chama a origem em que foi aberto, seja a
+Vercel, o Compose ou a máquina local. Isso tira do `X-Forwarded-Host` o papel que a entrada de
+2026-10-17 dava a ele no Swagger; o `X-Forwarded-Proto` continua valendo para os cookies `Secure`.
+**Onde:** `backend/.../shared/ApiDocsConfig.java`.
+
 ### 2026-10-19 - Em produção, a Vercel é o proxy da API
 
 **Armadilha:** parece que a primeira visita depois do repouso do Render daria erro, e que valeria

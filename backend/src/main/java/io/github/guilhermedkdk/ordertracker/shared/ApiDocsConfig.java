@@ -5,11 +5,14 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
+import io.swagger.v3.oas.models.servers.Server;
+import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 // The Swagger UI at /swagger-ui.html. Sign in through POST /api/auth/login there and the browser keeps
-// the session cookie for the other calls.
+// the session cookie for the other calls. The server is "/": behind the Vercel rewrite the API only
+// sees its own host, and "Try it out" has to call the origin the page was opened from.
 @Configuration(proxyBeanMethods = false)
 class ApiDocsConfig {
 
@@ -24,6 +27,7 @@ class ApiDocsConfig {
                                 token CSRF do cookie `XSRF-TOKEN` no header `X-XSRF-TOKEN`, o que esta página \
                                 faz sozinha. Contas de demonstração: `admin@example.com` e \
                                 `rafael@example.com`, senha `demo1234`."""))
+                .servers(List.of(new Server().url("/").description("A origem desta página")))
                 .components(new Components()
                         .addSecuritySchemes(
                                 SESSION,

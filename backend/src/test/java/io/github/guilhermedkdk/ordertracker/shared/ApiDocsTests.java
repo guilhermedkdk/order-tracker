@@ -48,6 +48,18 @@ class ApiDocsTests {
                 .containsKeys("200", "400", "404", "409");
     }
 
+    // Behind the Vercel rewrite the API sees its own host; an absolute address would send "Try it out"
+    // to another site, without the session cookie.
+    @Test
+    void theServerIsTheOriginTheDocumentationIsOpenedFrom() {
+        var docs = mvc.get()
+                .uri("/v3/api-docs")
+                .header("Host", "order-tracker.onrender.com")
+                .exchange();
+
+        assertThat(docs).bodyJson().extractingPath("$.servers[*].url").asArray().containsExactly("/");
+    }
+
     @Test
     void theSignedInUserIsNotDocumentedAsARequestParameter() {
         var docs = mvc.get().uri("/v3/api-docs").exchange();
