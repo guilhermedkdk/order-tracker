@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { DemoLogin } from '@/features/demo/DemoLogin'
 import { showApiError } from '@/lib/form-errors'
 import { useLogin, useMe } from './api'
-import { AuthCard } from './AuthCard'
+import { AuthLayout } from './AuthLayout'
 import { loginSchema, type LoginInput } from './schemas'
 
 const redirectSchema = z.object({ from: z.string().startsWith('/') })
@@ -40,7 +40,7 @@ export function LoginPage() {
   }
 
   return (
-    <AuthCard title="Entrar" description="Acompanhe os pedidos dos seus restaurantes.">
+    <AuthLayout title="Entrar" description="Acompanhe os pedidos dos seus restaurantes.">
       <form onSubmit={onSubmit} noValidate>
         <FieldGroup>
           {errors.root && (
@@ -70,7 +70,7 @@ export function LoginPage() {
             />
             <FieldError errors={[errors.password]} />
           </Field>
-          <Button type="submit" disabled={isSubmitting}>
+          <Button type="submit" size="lg" disabled={isSubmitting}>
             {isSubmitting ? 'Entrando…' : 'Entrar'}
           </Button>
           <p className="text-center text-sm text-muted-foreground">
@@ -81,12 +81,12 @@ export function LoginPage() {
           </p>
         </FieldGroup>
       </form>
-      <div className="mt-6">
+      <div className="pt-2">
         <DemoLogin
           onLoggedIn={() => navigate(target, { replace: true })}
           onError={(message) => form.setError('root', { message })}
         />
       </div>
-    </AuthCard>
+    </AuthLayout>
   )
 }
