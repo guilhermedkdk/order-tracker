@@ -2,6 +2,7 @@ import { screen } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
 import {
+  admin,
   ana,
   burger,
   orderDetails,
@@ -11,6 +12,7 @@ import {
   signedInAs,
 } from '@/test/fixtures'
 import { renderAt } from '@/test/render'
+import { choose } from '@/test/select'
 import { server } from '@/test/server'
 
 const restaurants = http.get('/api/restaurants', () => HttpResponse.json([pizzaria]))
@@ -23,7 +25,7 @@ async function fillRequiredFields(user: ReturnType<typeof renderAt>['user']) {
   await user.type(screen.getByLabelText('Número'), '1000')
   await user.type(screen.getByLabelText('Bairro'), 'Bela Vista')
   await user.type(screen.getByLabelText('Cidade'), 'São Paulo')
-  await user.selectOptions(screen.getByLabelText('UF'), 'SP')
+  await choose({ user, label: 'UF', option: 'SP' })
   await user.type(screen.getByLabelText('Item 1'), 'Pizza margherita')
   await user.clear(screen.getByLabelText('Quantidade do item 1'))
   await user.type(screen.getByLabelText('Quantidade do item 1'), '2')
@@ -31,8 +33,9 @@ async function fillRequiredFields(user: ReturnType<typeof renderAt>['user']) {
   await user.type(screen.getByLabelText('Taxa de entrega'), '7,00')
 }
 
-describe('new order', () => {
-  it('registers an order, previewing the total, and goes back to the list', async () => {
+// Filling the whole form key by key, as a person does, takes seconds in jsdom.
+describe('new order', { timeout: 15_000 }, () => {
+  it('registers an order, previewing the total, and goes back to the list where it shows', async () => {
     const orders: ReturnType<typeof orderSummary>[] = []
     let sent: unknown = null
     server.use(
@@ -46,15 +49,19 @@ describe('new order', () => {
         return HttpResponse.json(orderDetails(created), { status: 201 })
       }),
     )
-    const { user } = renderAt(`/pedidos/novo?restaurante=${pizzaria.id}`)
+    // Opened from the list filtered by another status, on a later page.
+    const { user, router } = renderAt(
+      `/pedidos/novo?restaurante=${pizzaria.id}&status=ENTREGUE&pagina=3`,
+    )
 
     await fillRequiredFields(user)
-    await user.selectOptions(screen.getByLabelText('Forma de pagamento'), 'Pix')
+    await choose({ user, label: 'Forma de pagamento', option: 'Pix' })
 
     expect(screen.getByText('R$ 98,80')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Registrar pedido' }))
 
     expect(await screen.findByRole('row', { name: /00C0DE11/ })).toBeInTheDocument()
+    expect(router.state.location.search).toBe(`?restaurante=${pizzaria.id}`)
     expect(sent).toEqual({
       restaurantId: pizzaria.id,
       customer: { name: 'Maria Silva', phone: '11987654321' },
@@ -72,6 +79,38 @@ describe('new order', () => {
       payment: { method: 'PIX' },
       notes: '',
     })
+  })
+
+  it('knows the customer of a just registered order in the next one', async () => {
+    let known: unknown = null
+    server.use(
+      signedInAs(ana),
+      restaurants,
+      http.get('/api/orders', () => HttpResponse.json(page([]))),
+      http.get('/api/customers', () =>
+        known
+          ? HttpResponse.json(known)
+          : HttpResponse.json({ detail: 'Cliente não encontrado.' }, { status: 404 }),
+      ),
+      http.post('/api/orders', async ({ request }) => {
+        const body = (await request.json()) as {
+          customer: { name: string; phone: string }
+          deliveryAddress: unknown
+        }
+        known = { ...body.customer, lastAddress: body.deliveryAddress }
+        return HttpResponse.json(orderDetails(orderSummary()), { status: 201 })
+      }),
+    )
+    const { user } = renderAt(`/pedidos/novo?restaurante=${pizzaria.id}`)
+
+    await fillRequiredFields(user)
+    await choose({ user, label: 'Forma de pagamento', option: 'Pix' })
+    await user.click(screen.getByRole('button', { name: 'Registrar pedido' }))
+    await user.click(await screen.findByRole('link', { name: 'Novo pedido' }))
+    await user.type(await screen.findByLabelText('Telefone'), '(11) 98765-4321')
+
+    expect(await screen.findByDisplayValue('Maria Silva')).toBeInTheDocument()
+    expect(screen.getByLabelText('Rua')).toHaveValue('Av. Paulista')
   })
 
   it('shows the API message next to the nested field it is about', async () => {
@@ -93,7 +132,7 @@ describe('new order', () => {
     const { user } = renderAt(`/pedidos/novo?restaurante=${pizzaria.id}`)
 
     await fillRequiredFields(user)
-    await user.selectOptions(screen.getByLabelText('Forma de pagamento'), 'Dinheiro')
+    await choose({ user, label: 'Forma de pagamento', option: 'Dinheiro' })
     await user.type(screen.getByLabelText('Troco para'), '50,00')
     await user.click(screen.getByRole('button', { name: 'Registrar pedido' }))
 
@@ -117,12 +156,29 @@ describe('new order', () => {
     const { user } = renderAt(`/pedidos/novo?restaurante=${pizzaria.id}`)
 
     await fillRequiredFields(user)
-    await user.selectOptions(screen.getByLabelText('Forma de pagamento'), 'Pix')
-    await user.selectOptions(screen.getByLabelText('Restaurante'), 'Burger da Vila')
+    await choose({ user, label: 'Forma de pagamento', option: 'Pix' })
+    await choose({ user, label: 'Restaurante selecionado', option: 'Burger da Vila' })
     await user.click(screen.getByRole('button', { name: 'Registrar pedido' }))
 
-    await screen.findByText('Nenhum pedido ainda. Os novos aparecem aqui.')
+    await screen.findByText('Nenhum pedido ainda.')
     expect(sent).toMatchObject({ restaurantId: burger.id })
+  })
+
+  it('names each restaurant with its owner when the admin picks one', async () => {
+    server.use(
+      signedInAs(admin),
+      http.get('/api/restaurants', () =>
+        HttpResponse.json([burger, { ...burger, id: 'outro-burger', ownerName: 'Ana Souza' }]),
+      ),
+    )
+    const { user } = renderAt('/pedidos/novo')
+
+    await screen.findByRole('combobox', { name: 'Restaurante' })
+    await choose({ user, label: 'Restaurante', option: /Burger da Vila.*Ana Souza/ })
+
+    expect(screen.getByRole('combobox', { name: 'Restaurante' })).toHaveTextContent(
+      'Burger da Vila · Ana Souza',
+    )
   })
 
   it('adds and removes items, updating the total', async () => {

@@ -31,16 +31,16 @@ ao resto.
 | ------ | ------------------------------------- | -------------------- |
 | `auth` | `CurrentUser`, recebido como parâmetro nos controllers; `UserDirectory`, para ler nomes de usuários; endpoints `/api/auth/*` | Usuários e senhas (BCrypt), emissão e leitura do JWT no cookie, CSRF, a configuração do Spring Security e, na fase 3, o refresh token com rotação. |
 | `restaurant` | `RestaurantService.scopeOf(CurrentUser)`, que devolve um `RestaurantScope` (`All` ou `Only`); endpoints `/api/restaurants` | A regra de visibilidade: admin vê todos os restaurantes, dono vê os seus. É o único lugar do sistema que olha o papel para decidir o que alguém vê. Também a regra de que só donos criam restaurantes. |
-| `order` | `Order` (`create`, `changeStatus`, `allowedNextStatuses`), `OrderService`, `OrderRepository`; endpoints `/api/orders` | A máquina de status, o cálculo de subtotal e total, as regras de troco e de cancelamento, o histórico de status, filtros e paginação, e a forma do pedido na API (código, próximos status). |
-| `customer` | `CustomerBook` (`remember`, `lookup`); endpoint `/api/customers` | A busca por restaurante e telefone, e a atualização do nome e do último endereço. |
+| `order` | `Order` (`create`, `changeStatus`, `allowedNextStatuses`), `OrderService`; endpoints `/api/orders` | A máquina de status, o cálculo de subtotal e total, as regras de troco e de cancelamento, o histórico de status, filtros e paginação, e a forma do pedido na API (código, próximos status). |
+| `customer` | `CustomerBook.remember`, chamado por `OrderService` a cada pedido gravado; endpoint `/api/customers` | A busca por restaurante e telefone, e o upsert atômico do nome e do último endereço. |
 | `demo` | `POST /api/demo/restore`, só para o admin | As contas demo, o roteiro de restaurantes e pedidos com horários no passado, a carga na primeira subida e a restauração. |
 | `live` (fase 3) | `GET /api/orders/stream` | As conexões SSE, o sinal de vida, a entrega só para quem enxerga o pedido. |
 | `shared` | `ApiExceptionHandler`, as exceções de domínio comuns, o `Clock` | O formato Problem Details e a lista de erros por campo. |
 
 Dependências: `restaurant` usa `auth`; `customer` usa `restaurant`; `order` usa `restaurant` e `customer`;
 `live` usa `order` (eventos) e `restaurant`; `demo` usa todos. Todos podem usar `shared`. Nenhum ciclo.
-`OrderRepository` é público só porque `demo` grava pedidos com horários no passado; fora de `order` e
-`demo`, pedidos entram por `OrderService`.
+Todo pedido entra por `OrderService`. A demo grava os seus, montados com horários no passado, por
+`OrderService.save`, o mesmo caminho da criação, que também alimenta a base de clientes.
 
 ### O agregado `Order`
 
@@ -97,10 +97,11 @@ de todos em `src/lib/` e `src/components/ui/` (componentes do shadcn/ui).
 | ----- | ------------- |
 | `app/` | Rotas, providers (TanStack Query), o layout com o seletor de restaurante e o guarda de rota autenticada. |
 | `lib/http.ts` | O único módulo que chama `fetch` na API. Fala com `/api` na própria origem, manda o header CSRF nas requisições que alteram dados e transforma Problem Details em `ApiError` com os erros por campo. |
-| `lib/format.ts` | Dinheiro em reais, datas no fuso de São Paulo, código do pedido, máscaras de telefone e CEP. |
+| `lib/format.ts` | Dinheiro em reais, datas no fuso de São Paulo, tempo desde o recebimento, código do pedido, máscaras de telefone e CEP. |
+| `components/` | O que várias telas usam além do shadcn/ui: a logo, o `ControlledSelect` (o Select ligado a um campo do react-hook-form) e a tela de carregamento. |
 | `features/auth/` | Login, cadastro, botões de conta demo, `useMe` e logout. |
 | `features/restaurants/` | Seletor de restaurante, criação do primeiro restaurante e o restaurante selecionado, que vive na URL (`?restaurante=`). |
-| `features/orders/` | Lista com filtro e paginação, detalhe com linha do tempo, formulário de novo pedido, ações de status e os rótulos em português dos enums. Na fase 3, o kanban. |
+| `features/orders/` | Lista com filtro e paginação, detalhe com linha do tempo, formulário de novo pedido, kanban com arrastar entre colunas, ações de status e os rótulos em português dos enums. |
 | `features/customers/` | A busca do cliente pelo telefone, usada pelo formulário de pedido. |
 | `features/demo/` | O botão de restaurar demonstração. |
 

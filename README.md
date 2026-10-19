@@ -1,5 +1,7 @@
 # Rastreador de pedidos
 
+[![CI](https://github.com/guilhermedkdk/order-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/guilhermedkdk/order-tracker/actions/workflows/ci.yml)
+
 Mini rastreador de pedidos de delivery, feito para um desafio técnico. Restaurantes registram pedidos
 e acompanham cada um do recebimento à entrega. API em Java 25 com Spring Boot 4.1, front em React com
 TypeScript e banco Postgres.
@@ -47,6 +49,18 @@ pnpm dev
 
 Abra http://localhost:5173. O Vite repassa `/api` para a API, então o navegador fala com uma origem
 só.
+
+### Só com Docker
+
+Sem Java nem Node instalados, da raiz do repositório:
+
+```bash
+docker compose up --build
+```
+
+O app fica em http://localhost:8081 e o Swagger em http://localhost:8081/swagger-ui.html. O nginx
+serve o front e repassa `/api` para a API, como a Vercel faz em produção. A primeira subida demora
+alguns minutos, porque compila a API e o front dentro dos containers.
 
 ### Contas de demonstração
 
@@ -115,5 +129,6 @@ O desenvolvimento segue em três fases, cada uma num PR (ordem completa no [SPEC
 
 1. **Fase 1, o obrigatório:** esta versão.
 2. **Fase 2:** detalhe do pedido com linha do tempo, filtro e paginação na tela, base de clientes com
-   preenchimento pelo telefone, endereço pelo CEP, Docker Compose completo, CI e deploy.
-3. **Fase 3:** atualização em tempo real por SSE, kanban e refresh token com rotação.
+   preenchimento pelo telefone, endereço pelo CEP, Docker Compose completo, CI, repaginação visual,
+   kanban e deploy.
+3. **Fase 3:** atualização em tempo real por SSE e refresh token com rotação.

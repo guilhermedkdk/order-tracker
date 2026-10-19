@@ -7,7 +7,7 @@ import io.github.guilhermedkdk.ordertracker.order.Author;
 import io.github.guilhermedkdk.ordertracker.order.NewOrder;
 import io.github.guilhermedkdk.ordertracker.order.Order;
 import io.github.guilhermedkdk.ordertracker.order.OrderCustomer;
-import io.github.guilhermedkdk.ordertracker.order.OrderRepository;
+import io.github.guilhermedkdk.ordertracker.order.OrderService;
 import io.github.guilhermedkdk.ordertracker.order.OrderStatus;
 import io.github.guilhermedkdk.ordertracker.restaurant.RestaurantService;
 import java.time.Clock;
@@ -39,10 +39,10 @@ class DemoData {
 
     private final UserDirectory users;
     private final RestaurantService restaurants;
-    private final OrderRepository orders;
+    private final OrderService orders;
     private final Clock clock;
 
-    DemoData(UserDirectory users, RestaurantService restaurants, OrderRepository orders, Clock clock) {
+    DemoData(UserDirectory users, RestaurantService restaurants, OrderService orders, Clock clock) {
         this.users = users;
         this.restaurants = restaurants;
         this.orders = orders;

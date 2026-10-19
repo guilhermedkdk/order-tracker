@@ -12,6 +12,7 @@ import {
   signedInAs,
 } from '@/test/fixtures'
 import { renderAt } from '@/test/render'
+import { choose } from '@/test/select'
 import { server } from '@/test/server'
 
 const restaurants = http.get('/api/restaurants', () => HttpResponse.json([burger, pizzaria]))
@@ -66,6 +67,33 @@ describe('order list', () => {
     expect(filtered).toBe(false)
   })
 
+  it("drops the previous restaurant's orders while the next one loads", async () => {
+    let answerBurger: () => void = () => {}
+    server.use(
+      signedInAs(ana),
+      restaurants,
+      http.get('/api/orders', ({ request }) => {
+        if (new URL(request.url).searchParams.get('restaurantId') !== burger.id) {
+          return HttpResponse.json(page([orderSummary()]))
+        }
+        return new Promise<Response>((resolve) => {
+          answerBurger = () => resolve(HttpResponse.json(page([])))
+        })
+      }),
+    )
+    const { user } = renderAt(`/pedidos?restaurante=${pizzaria.id}`)
+
+    await screen.findByRole('row', { name: /00C0DE11/ })
+    await choose({ user, label: 'Restaurante selecionado', option: 'Burger da Vila' })
+
+    expect(
+      await screen.findByRole('heading', { name: 'Pedidos de Burger da Vila' }),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('row', { name: /00C0DE11/ })).not.toBeInTheDocument()
+    answerBurger()
+    expect(await screen.findByText('Nenhum pedido ainda.')).toBeInTheDocument()
+  })
+
   it('moves an order forward with the action the API allows', async () => {
     let order = orderSummary()
     let sent: unknown = null
@@ -108,9 +136,10 @@ describe('order list', () => {
     const { user } = renderAt(`/pedidos?restaurante=${pizzaria.id}`)
 
     const row = await screen.findByRole('row', { name: /00C0DE11/ })
-    await user.click(within(row).getByRole('button', { name: 'Cancelar' }))
+    await user.click(within(row).getByRole('button', { name: 'Mais ações do pedido #00C0DE11' }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Cancelar pedido' }))
     const dialog = await screen.findByRole('dialog', { name: 'Cancelar o pedido #00C0DE11' })
-    await user.selectOptions(within(dialog).getByLabelText('Motivo'), 'Cliente desistiu')
+    await choose({ user, label: 'Motivo', option: 'Cliente desistiu' })
     await user.click(within(dialog).getByRole('button', { name: 'Confirmar cancelamento' }))
 
     expect(await within(row).findByText('Cancelado')).toBeInTheDocument()
@@ -126,9 +155,10 @@ describe('order list', () => {
     const { user } = renderAt(`/pedidos?restaurante=${pizzaria.id}`)
 
     const row = await screen.findByRole('row', { name: /00C0DE11/ })
-    await user.click(within(row).getByRole('button', { name: 'Cancelar' }))
+    await user.click(within(row).getByRole('button', { name: 'Mais ações do pedido #00C0DE11' }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Cancelar pedido' }))
     const dialog = await screen.findByRole('dialog')
-    await user.selectOptions(within(dialog).getByLabelText('Motivo'), 'Outro motivo')
+    await choose({ user, label: 'Motivo', option: 'Outro motivo' })
     await user.click(within(dialog).getByRole('button', { name: 'Confirmar cancelamento' }))
 
     expect(
@@ -179,6 +209,30 @@ describe('order list', () => {
 
     expect(await within(row).findByText('Em preparo')).toBeInTheDocument()
     expect(screen.queryByText('Tente de novo.')).not.toBeInTheDocument()
+  })
+
+  it('reloads the list when a move is refused because the order changed elsewhere', async () => {
+    let order = orderSummary()
+    server.use(
+      signedInAs(ana),
+      restaurants,
+      http.get('/api/orders', () => HttpResponse.json(page([order]))),
+      http.patch(`/api/orders/${order.id}/status`, () =>
+        HttpResponse.json({ detail: 'Este pedido já mudou de status.' }, { status: 409 }),
+      ),
+    )
+    const { user } = renderAt(`/pedidos?restaurante=${pizzaria.id}`)
+
+    const row = await screen.findByRole('row', { name: /00C0DE11/ })
+    // Someone else starts preparing it while this screen still shows it as received.
+    order = orderSummary({
+      status: 'EM_PREPARO',
+      allowedNextStatuses: ['SAIU_PARA_ENTREGA', 'CANCELADO'],
+    })
+    await user.click(within(row).getByRole('button', { name: 'Iniciar preparo' }))
+
+    expect(await within(row).findByText('Em preparo')).toBeInTheDocument()
+    expect(within(row).getByRole('button', { name: 'Saiu para entrega' })).toBeInTheDocument()
   })
 
   it('shows why the API refused a move', async () => {

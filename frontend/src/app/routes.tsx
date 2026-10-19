@@ -3,6 +3,7 @@ import { LoginPage } from '@/features/auth/LoginPage'
 import { RequireAuth } from '@/features/auth/RequireAuth'
 import { SignupPage } from '@/features/auth/SignupPage'
 import { NewOrderPage } from '@/features/orders/NewOrderPage'
+import { OrderDetailPage } from '@/features/orders/OrderDetailPage'
 import { OrdersPage } from '@/features/orders/OrdersPage'
 import { NewRestaurantPage } from '@/features/restaurants/NewRestaurantPage'
 import { RequireRestaurant } from '@/features/restaurants/RequireRestaurant'
@@ -26,6 +27,7 @@ export const routes: RouteObject[] = [
             children: [
               { path: '/pedidos', Component: OrdersPage },
               { path: '/pedidos/novo', Component: NewOrderPage },
+              { path: '/pedidos/:id', Component: OrderDetailPage },
             ],
           },
         ],

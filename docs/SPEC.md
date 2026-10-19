@@ -23,7 +23,7 @@ Cada linha só é marcada quando o teste que a prova existe e passa.
 | [x] | Listar todos os pedidos e buscar por ID | `GET /api/orders`, `GET /api/orders/{id}` | `OrderApiTests` |
 | [x] | Persistência em SQLite ou similar | Postgres com Flyway | todos os testes HTTP, com Postgres real via Testcontainers |
 | [x] | React lista pedidos com status atual e cria pedido | Telas `/pedidos` e `/pedidos/novo` | `orders.test.tsx`, `new-order.test.tsx` |
-| [ ] | Repositório Git com histórico | Um PR por fase, commits por passo | histórico no GitHub |
+| [x] | Repositório Git com histórico | Um PR por fase, commits por passo | [PR #1](https://github.com/guilhermedkdk/order-tracker/pull/1), com merge commit |
 
 ## Papéis e visibilidade
 
@@ -103,11 +103,13 @@ Todo pedido na API traz `id` (UUID), `code`, os totais e `allowedNextStatuses`. 
 
 - `/entrar`: login e os botões "Entrar como admin" e "Entrar como dono". `/cadastro`: cadastro.
 - `/restaurantes/novo`: criação de restaurante, que também é a primeira tela de um dono novo.
-- Cabeçalho: seletor de restaurante, com a opção "Todos" para o admin, nome do usuário, sair e, para o
-  admin, "Restaurar demonstração" com confirmação.
-- `/pedidos`: lista com código, cliente, bairro, total, horário e status, e as ações dos próximos status
-  em cada linha. Cancelar abre um diálogo com o motivo. Na fase 2, filtro por status e paginação; na
-  fase 3, alternância entre lista e kanban.
+- Cabeçalho: seletor de restaurante, com a opção "Todos" para o admin, e o menu do usuário com o nome,
+  sair, "Novo restaurante" para o dono e "Restaurar demonstração" com confirmação para o admin.
+- `/pedidos`: abre na lista, com código, cliente, bairro, total, horário e status, filtro por status e
+  paginação. A alternância leva ao kanban, com uma coluna por status, os pedidos mais recentes de cada
+  uma e o total da coluna; um pedido muda de coluna arrastando o card ou pelo botão da próxima ação, e
+  só as colunas dos próximos status aceitam o card. A visão fica na URL (`?visao=kanban`). Nas duas, a
+  próxima ação fica à vista e cancelar fica no menu do pedido, com um diálogo para o motivo.
 - `/pedidos/novo`: o formulário do pedido no restaurante selecionado, com itens que se adicionam e
   removem e a prévia do total. Na visão "Todos", o restaurante é o primeiro campo do formulário. Na fase 2, o telefone preenche nome e endereço,
   e o CEP preenche rua, bairro, cidade e UF pelo ViaCEP.
@@ -164,11 +166,13 @@ Cada fase é uma branch com um PR para `main`, revisado com `/code-review` antes
 4. Preenchimento do endereço pelo CEP.
 5. Docker Compose do sistema inteiro.
 6. GitHub Actions com build e testes.
-7. Deploy: Render, Vercel e Neon, com o link no README.
+7. Repaginação visual: logo, cabeçalho com menu do usuário, lista com uma linha por pedido e
+   formulários com os componentes do shadcn/ui.
+8. Kanban como segunda visão dos pedidos, com arrastar entre colunas, adiantado da fase 3.
+9. Deploy: Render, Vercel e Neon, com o link no README.
 
 **Fase 3, `feat/phase-3`: extras**
 
 1. Refresh token com rotação, a segunda fase da autenticação.
 2. Tempo real por SSE.
-3. Kanban.
-4. README final: prints, diagrama e "Como usei IA".
+3. README final: prints, diagrama e "Como usei IA".

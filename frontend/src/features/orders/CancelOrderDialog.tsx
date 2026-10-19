@@ -1,7 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useState } from 'react'
+import type { RefObject } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
+import { ControlledSelect } from '@/components/ControlledSelect'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -12,14 +13,13 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog'
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field'
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Textarea } from '@/components/ui/textarea'
 import { showApiError } from '@/lib/form-errors'
-import { cancellationReasonSchema, useChangeStatus, type OrderSummary } from './api'
+import { cancellationReasonSchema, useChangeStatus, type OrderActionTarget } from './api'
 import { CANCELLATION_REASON_LABEL } from './labels'
+import { announceMove } from './useMoveOrder'
 
 // Mirrors the API rules so the dialog answers at once; the API still checks them.
 const cancelSchema = z
@@ -38,8 +38,21 @@ const cancelSchema = z
 type CancelInput = z.input<typeof cancelSchema>
 type CancelOutput = z.output<typeof cancelSchema>
 
-export function CancelOrderDialog({ order }: { order: OrderSummary }) {
-  const [open, setOpen] = useState(false)
+/**
+ * Asks why the order is being cancelled. It opens from a menu that closes first, so the open state
+ * lives with the caller, and focus goes back to `returnFocus`, when given, as it closes.
+ */
+export function CancelOrderDialog({
+  order,
+  open,
+  onOpenChange,
+  returnFocus,
+}: {
+  order: OrderActionTarget
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  returnFocus?: RefObject<HTMLElement | null>
+}) {
   const change = useChangeStatus()
   const form = useForm<CancelInput, unknown, CancelOutput>({
     resolver: zodResolver(cancelSchema),
@@ -55,28 +68,30 @@ export function CancelOrderDialog({ order }: { order: OrderSummary }) {
         cancellationReason,
         cancellationDetail: cancellationDetail || undefined,
       })
-      setOpen(false)
+      announceMove({ order, status: 'CANCELADO' })
+      changeOpen(false)
     } catch (error) {
       showApiError({ form, error, fields: ['cancellationReason', 'cancellationDetail'] })
     }
   })
 
+  function changeOpen(next: boolean) {
+    onOpenChange(next)
+    if (!next) {
+      form.reset()
+    }
+  }
+
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(next) => {
-        setOpen(next)
-        if (!next) {
-          form.reset()
-        }
-      }}
-    >
-      <DialogTrigger asChild>
-        <Button size="sm" variant="ghost" className="text-destructive">
-          Cancelar
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
+    <Dialog open={open} onOpenChange={changeOpen}>
+      <DialogContent
+        onCloseAutoFocus={(event) => {
+          if (returnFocus) {
+            event.preventDefault()
+            returnFocus.current?.focus()
+          }
+        }}
+      >
         <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
           <DialogHeader>
             <DialogTitle>Cancelar o pedido #{order.code}</DialogTitle>
@@ -92,19 +107,17 @@ export function CancelOrderDialog({ order }: { order: OrderSummary }) {
             )}
             <Field data-invalid={!!errors.cancellationReason}>
               <FieldLabel htmlFor="cancellation-reason">Motivo</FieldLabel>
-              <NativeSelect
+              <ControlledSelect
+                control={form.control}
+                name="cancellationReason"
                 id="cancellation-reason"
-                className="w-full"
-                aria-invalid={!!errors.cancellationReason}
-                {...form.register('cancellationReason')}
-              >
-                <NativeSelectOption value="">Escolha o motivo</NativeSelectOption>
-                {cancellationReasonSchema.options.map((reason) => (
-                  <NativeSelectOption key={reason} value={reason}>
-                    {CANCELLATION_REASON_LABEL[reason]}
-                  </NativeSelectOption>
-                ))}
-              </NativeSelect>
+                placeholder="Escolha o motivo"
+                invalid={!!errors.cancellationReason}
+                options={cancellationReasonSchema.options.map((reason) => ({
+                  value: reason,
+                  label: CANCELLATION_REASON_LABEL[reason],
+                }))}
+              />
               <FieldError errors={[errors.cancellationReason]} />
             </Field>
             <Field data-invalid={!!errors.cancellationDetail}>

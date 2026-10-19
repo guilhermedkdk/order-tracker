@@ -46,7 +46,8 @@ describe('demo', () => {
     )
     const { user } = renderAt('/pedidos')
 
-    await user.click(await screen.findByRole('button', { name: 'Restaurar demonstração' }))
+    await user.click(await screen.findByRole('button', { name: 'Suporte' }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Restaurar demonstração' }))
     const dialog = await screen.findByRole('dialog', { name: 'Restaurar a demonstração?' })
     await user.click(within(dialog).getByRole('button', { name: 'Restaurar' }))
 
@@ -57,11 +58,13 @@ describe('demo', () => {
   it('does not offer the restore to owners', async () => {
     server.use(signedInAs(rafael), ...appData)
 
-    renderAt('/pedidos')
+    const { user } = renderAt('/pedidos')
 
+    await user.click(await screen.findByRole('button', { name: 'Rafael Costa' }))
+
+    expect(await screen.findByRole('menuitem', { name: 'Sair' })).toBeInTheDocument()
     expect(
-      await screen.findByRole('heading', { name: 'Pedidos de Pizzaria Bella' }),
-    ).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Restaurar demonstração' })).not.toBeInTheDocument()
+      screen.queryByRole('menuitem', { name: 'Restaurar demonstração' }),
+    ).not.toBeInTheDocument()
   })
 })

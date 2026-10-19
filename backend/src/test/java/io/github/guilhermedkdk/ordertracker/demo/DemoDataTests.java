@@ -91,6 +91,18 @@ class DemoDataTests {
     }
 
     @Test
+    void demoCustomersFillTheNextOrder() {
+        var rafael = login("rafael@example.com");
+        String cantina = read(rafael.get("/api/restaurants"), "$[1].id");
+
+        var marina = rafael.get("/api/customers?restaurantId=" + cantina + "&phone=11987650001");
+
+        assertThat(marina).hasStatus(HttpStatus.OK);
+        assertThat(marina).bodyJson().extractingPath("$.name").isEqualTo("Marina Alves");
+        assertThat(marina).bodyJson().extractingPath("$.lastAddress.street").isEqualTo("Rua Augusta");
+    }
+
+    @Test
     void restoringRecreatesTheDemoAndLeavesRealAccountsAlone() {
         var ana = accounts.owner("Ana Souza");
         String anasRestaurant = read(ana.post("/api/restaurants", "{\"name\": \"Pizzaria da Ana\"}"), "$.id");

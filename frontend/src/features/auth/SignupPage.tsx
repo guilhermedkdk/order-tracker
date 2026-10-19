@@ -7,7 +7,7 @@ import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/c
 import { Input } from '@/components/ui/input'
 import { showApiError } from '@/lib/form-errors'
 import { useMe, useSignup } from './api'
-import { AuthCard } from './AuthCard'
+import { AuthLayout } from './AuthLayout'
 import { signupSchema, type SignupInput } from './schemas'
 
 export function SignupPage() {
@@ -34,7 +34,7 @@ export function SignupPage() {
   }
 
   return (
-    <AuthCard
+    <AuthLayout
       title="Criar conta"
       description="Cadastre-se para registrar os pedidos dos seus restaurantes."
     >
@@ -78,7 +78,7 @@ export function SignupPage() {
             <FieldDescription>De 8 a 72 caracteres.</FieldDescription>
             <FieldError errors={[errors.password]} />
           </Field>
-          <Button type="submit" disabled={isSubmitting}>
+          <Button type="submit" size="lg" disabled={isSubmitting}>
             {isSubmitting ? 'Criando conta…' : 'Criar conta'}
           </Button>
           <p className="text-center text-sm text-muted-foreground">
@@ -89,6 +89,6 @@ export function SignupPage() {
           </p>
         </FieldGroup>
       </form>
-    </AuthCard>
+    </AuthLayout>
   )
 }

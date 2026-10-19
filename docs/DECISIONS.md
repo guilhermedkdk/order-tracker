@@ -3,6 +3,92 @@
 Log append-only, com a entrada mais nova no topo. Cada entrada registra o que uma sessão futura faria
 errado sem ela.
 
+### 2026-10-19 - Telefone e CEP preenchem pelo mesmo registro
+
+**Armadilha:** cada preenchimento olhando só para campos vazios, ou só para o que ele mesmo pôs,
+deixava no formulário o nome e o endereço do cliente anterior quando o telefone era corrigido, e o
+endereço da base de clientes quando a pessoa digitava um CEP novo.
+**Regra:** `useAutofill` guarda o que foi preenchido sozinho, e um campo vira da pessoa assim que ela o
+muda. O endereço do cliente só entra enquanto o CEP não foi digitado. A resposta do ViaCEP troca rua,
+bairro, cidade e UF preenchidos antes e limpa número e complemento que vieram de outro endereço. Isso
+substitui a regra do CEP de 2026-10-17 abaixo.
+**Onde:** `frontend/src/features/orders/autofill.ts`, `useCustomerAutofill.ts`, `useCepAutofill.ts`.
+
+### 2026-10-19 - Evento de menu ou diálogo chega ao card do kanban
+
+**Armadilha:** um portal do React renderiza o menu e o diálogo fora do card, mas os eventos sobem pela
+árvore do React até o `<li>` arrastável. O dnd-kit não confere de onde veio o clique, então selecionar
+texto no diálogo de cancelamento arrastava o card de trás.
+**Regra:** os listeners do card passam por `fromCardOnly`, que ignora eventos de fora do DOM do card.
+**Onde:** `frontend/src/features/orders/OrderBoard.tsx`.
+
+### 2026-10-19 - Diálogo aberto por menu mora fora do menu
+
+**Armadilha:** o caminho comum é pôr o `Dialog` dentro do item do `DropdownMenu`. O menu fecha ao
+escolher o item, desmonta o conteúdo e leva o diálogo junto.
+**Regra:** o diálogo fica ao lado do menu, com o estado de aberto no componente pai, e recebe
+`returnFocus` para devolver o foco a quem o abriu. Vale para cancelar pedido e restaurar demonstração.
+**Onde:** `frontend/src/features/orders/StatusActions.tsx`, `frontend/src/app/UserMenu.tsx`.
+
+### 2026-10-19 - Arrastar no kanban: toda coluna é alvo, e quem decide é o soltar
+
+**Armadilha:** desligar (`disabled`) as colunas que não aceitam o card parece o jeito certo, mas o
+dnd-kit mede os alvos no começo do arrasto e uma coluna ligada no meio dele pode ficar sem medida.
+O `<a>` do card também é arrastável pelo próprio navegador e rouba o gesto do dnd-kit.
+**Regra:** todas as colunas ficam ligadas; `resolveDrop` decide no soltar (ignora, move ou pede o
+motivo) e o destaque visual só mostra as colunas permitidas. O link do card tem `draggable={false}`.
+Não há sensor de teclado: pelo teclado, o caminho são os botões do card.
+**Onde:** `frontend/src/features/orders/OrderBoard.tsx`, `frontend/src/features/orders/board.ts`.
+
+### 2026-10-19 - Kanban com uma consulta por status
+
+**Armadilha:** o reflexo é carregar todos os pedidos numa consulta só e agrupar no front, ou criar
+um endpoint de quadro. A primeira traz só 100 pedidos misturados e erra o total de cada coluna; a
+segunda muda a API por causa de uma tela.
+**Regra:** cada coluna é a primeira página de `GET /api/orders?status=`, com o `totalElements` como
+total e "Ver todos" para a lista filtrada. O card arrastado vai para a coluna nova antes da resposta
+(`pending`), e como as colunas recarregam em tempos diferentes, `arrangeBoard` mostra cada pedido uma
+vez só e acerta os totais.
+**Onde:** `frontend/src/features/orders/api.ts` (`useOrderBoard`), `frontend/src/features/orders/board.ts`.
+
+### 2026-10-19 - Regras globais do CSS que parecem sobrando
+
+**Armadilha:** `scrollbar-gutter: stable` evita que a página ande para o lado quando a barra de
+rolagem aparece ou some (trocar de filtro mudava a altura). Mas o Radix, ao abrir menu, select ou
+diálogo, trava a rolagem e soma uma margem do tamanho da barra, e com o espaço já reservado a página
+andava do mesmo jeito. Além disso, o Tailwind 4 deixa botão com cursor de seta. CSS não aceita
+comentário com `//`, então o porquê fica aqui.
+**Regra:** não tire do `index.css` o `scrollbar-gutter`, a margem zerada em `body[data-scroll-locked]`
+nem o `cursor: pointer` dos elementos clicáveis.
+**Onde:** `frontend/src/index.css`.
+
+### 2026-10-17 - Proxy na frente da API repassa o host original
+
+**Armadilha:** atrás do nginx (e, em produção, do rewrite da Vercel), a API enxerga o próprio endereço
+interno. Sem `X-Forwarded-Host`, o Swagger anunciava `http://localhost` sem a porta, e o "Try it out"
+mandava as chamadas para o lugar errado.
+**Regra:** o proxy manda `Host`, `X-Forwarded-Proto` e `X-Forwarded-Host`, e a API roda com
+`SERVER_FORWARD_HEADERS_STRATEGY=framework` sempre que estiver atrás de um proxy.
+**Onde:** `frontend/nginx.conf`, `docker-compose.yml`, variáveis do Render.
+
+### 2026-10-17 - CEP preenche pelo evento do campo, não por observar o valor
+
+**Armadilha:** observar o CEP com `useWatch` dispararia o ViaCEP também quando a base de clientes
+preenche o endereço, trocando "Av. Paulista" do cadastro por "Avenida Paulista". E uma resposta lenta
+apagaria a rua que a pessoa digitou enquanto esperava.
+**Regra:** a busca roda no `onChange` do próprio campo de CEP, e a resposta só preenche campos vazios
+ou que ainda guardam o preenchimento anterior do CEP. Número e complemento nunca vêm do ViaCEP.
+**Onde:** `frontend/src/features/orders/useCepAutofill.ts`.
+
+### 2026-10-17 - Base de clientes gravada por upsert nativo
+
+**Armadilha:** o jeito JPA de "buscar e salvar" o cliente corre: dois primeiros pedidos do mesmo
+telefone ao mesmo tempo tentam inserir os dois, um bate na unique e derruba a criação do pedido.
+**Regra:** o cliente só é gravado por `CustomerRepository.upsert`, um `insert ... on conflict do update`
+do Postgres que só sobrescreve quando o pedido é mais novo (`last_order_at`). O id do cliente é UUID
+v4, porque o insert nativo não passa pelo gerador do Hibernate, e ele nunca sai da API.
+**Onde:** `backend/.../customer/CustomerRepository.java`, `V4__create_customers.sql`.
+
 ### 2026-10-17 - Dados de demonstração passam pelo domínio
 
 **Armadilha:** o caminho comum é um SQL de seed, que grava totais e histórico à mão e deixa de bater

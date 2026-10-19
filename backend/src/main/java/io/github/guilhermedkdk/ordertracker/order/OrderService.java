@@ -1,6 +1,8 @@
 package io.github.guilhermedkdk.ordertracker.order;
 
 import io.github.guilhermedkdk.ordertracker.auth.CurrentUser;
+import io.github.guilhermedkdk.ordertracker.customer.CustomerAddress;
+import io.github.guilhermedkdk.ordertracker.customer.CustomerBook;
 import io.github.guilhermedkdk.ordertracker.restaurant.RestaurantScope;
 import io.github.guilhermedkdk.ordertracker.restaurant.RestaurantService;
 import io.github.guilhermedkdk.ordertracker.shared.NotFoundException;
@@ -24,19 +26,31 @@ public class OrderService {
 
     private final OrderRepository orders;
     private final RestaurantService restaurants;
+    private final CustomerBook customers;
     private final Clock clock;
 
-    OrderService(OrderRepository orders, RestaurantService restaurants, Clock clock) {
+    OrderService(OrderRepository orders, RestaurantService restaurants, CustomerBook customers, Clock clock) {
         this.orders = orders;
         this.restaurants = restaurants;
+        this.customers = customers;
         this.clock = clock;
     }
 
     @Transactional
     public OrderView create(CurrentUser user, NewOrder data) {
         restaurants.requireVisible(restaurants.scopeOf(user), data.restaurantId());
-        Order order = orders.save(Order.create(data, authorOf(user), clock.instant()));
-        return view(order);
+        return view(save(Order.create(data, authorOf(user), clock.instant())));
+    }
+
+    /**
+     * Saves a new order and feeds the restaurant's customer base, which only fills the next order of
+     * the same phone. The demo calls it for orders built with past timestamps; it checks no visibility.
+     */
+    @Transactional
+    public Order save(Order order) {
+        Order saved = orders.save(order);
+        rememberCustomer(saved);
+        return saved;
     }
 
     @Transactional(readOnly = true)
@@ -90,6 +104,23 @@ public class OrderService {
     private OrderView view(Order order) {
         return new OrderView(
                 order, restaurants.namesOf(List.of(order.restaurantId())).get(order.restaurantId()));
+    }
+
+    private void rememberCustomer(Order order) {
+        DeliveryAddress address = order.deliveryAddress();
+        customers.remember(
+                order.restaurantId(),
+                order.customer().name(),
+                order.customer().phone(),
+                new CustomerAddress(
+                        address.cep(),
+                        address.street(),
+                        address.number(),
+                        address.complement(),
+                        address.neighborhood(),
+                        address.city(),
+                        address.state()),
+                order.createdAt());
     }
 
     private static Author authorOf(CurrentUser user) {

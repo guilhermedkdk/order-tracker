@@ -1,46 +1,104 @@
+import { Ellipsis, Eye, XCircle } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { Link, useLocation } from 'react-router'
 import { Button } from '@/components/ui/button'
-import { ApiError } from '@/lib/http'
-import { useChangeStatus, type OrderSummary } from './api'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { cn } from '@/lib/utils'
+import type { OrderActionTarget } from './api'
 import { CancelOrderDialog } from './CancelOrderDialog'
 import { ACTION_LABEL } from './labels'
+import { useMoveOrder } from './useMoveOrder'
 
 /**
- * One button per status the API says the order can move to. Cancelling opens a dialog, since it
- * needs a reason.
+ * The next status the API allows, as a button, and cancelling, which asks for a reason. The `row`
+ * and `card` layouts keep to one line by tucking cancelling and the details link into a "⋯" menu,
+ * and `card` stretches the next step across the card; `buttons` shows cancelling beside it.
  */
 export function StatusActions({
   order,
-  onOutcome,
+  layout,
 }: {
-  order: OrderSummary
-  onOutcome: (error: string | null) => void
+  order: OrderActionTarget
+  layout: 'row' | 'card' | 'buttons'
 }) {
-  const change = useChangeStatus()
+  const { move, isPending } = useMoveOrder()
+  // A list has one of these per order, so the dialog and its form mount on the first cancel only.
+  const [dialog, setDialog] = useState<'unmounted' | 'open' | 'closed'>('unmounted')
+  const opener = useRef<HTMLButtonElement>(null)
+  const { search } = useLocation()
   const forward = order.allowedNextStatuses.filter((status) => status !== 'CANCELADO')
+  const canCancel = order.allowedNextStatuses.includes('CANCELADO')
 
   return (
-    <div className="flex flex-wrap justify-end gap-2">
+    <div className="flex items-center justify-end gap-1.5">
       {forward.map((status) => (
         <Button
           key={status}
           size="sm"
           variant="outline"
-          disabled={change.isPending}
-          onClick={() =>
-            change.mutate(
-              { orderId: order.id, status },
-              {
-                onSuccess: () => onOutcome(null),
-                onError: (error) =>
-                  onOutcome(error instanceof ApiError ? error.message : 'Algo deu errado.'),
-              },
-            )
-          }
+          className={cn(layout === 'card' && 'flex-1')}
+          disabled={isPending}
+          onClick={() => move({ order, status })}
         >
           {ACTION_LABEL[status]}
         </Button>
       ))}
-      {order.allowedNextStatuses.includes('CANCELADO') && <CancelOrderDialog order={order} />}
+      {layout === 'buttons' && canCancel && (
+        <Button
+          ref={opener}
+          size="sm"
+          variant="ghost"
+          className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+          onClick={() => setDialog('open')}
+        >
+          Cancelar pedido
+        </Button>
+      )}
+      {layout !== 'buttons' && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              ref={opener}
+              size="icon-sm"
+              variant="ghost"
+              aria-label={`Mais ações do pedido #${order.code}`}
+            >
+              <Ellipsis />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-44">
+            <DropdownMenuItem asChild>
+              <Link to={{ pathname: `/pedidos/${order.id}`, search }}>
+                <Eye />
+                Ver detalhes
+              </Link>
+            </DropdownMenuItem>
+            {canCancel && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem variant="destructive" onSelect={() => setDialog('open')}>
+                  <XCircle />
+                  Cancelar pedido
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+      {canCancel && dialog !== 'unmounted' && (
+        <CancelOrderDialog
+          order={order}
+          open={dialog === 'open'}
+          onOpenChange={(open) => setDialog(open ? 'open' : 'closed')}
+          returnFocus={opener}
+        />
+      )}
     </div>
   )
 }
