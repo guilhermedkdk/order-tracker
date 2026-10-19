@@ -76,7 +76,7 @@ describe('order list filters', () => {
 
     await user.click(screen.getByRole('button', { name: 'Próxima' }))
     await screen.findByText('Página 2 de 3 · 45 pedidos')
-    await choose({ user, label: 'Restaurante', option: 'Burger da Vila' })
+    await choose({ user, label: 'Restaurante selecionado', option: 'Burger da Vila' })
 
     expect(await screen.findByText('Página 1 de 3 · 45 pedidos')).toBeInTheDocument()
     expect(requests.at(-1)).toEqual({ status: 'ENTREGUE', page: '0', restaurantId: burger.id })

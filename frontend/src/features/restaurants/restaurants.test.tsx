@@ -51,7 +51,7 @@ describe('restaurants', () => {
     expect(
       await screen.findByRole('heading', { name: 'Pedidos de Burger da Vila' }),
     ).toBeInTheDocument()
-    await choose({ user, label: 'Restaurante', option: 'Pizzaria Bella' })
+    await choose({ user, label: 'Restaurante selecionado', option: 'Pizzaria Bella' })
 
     expect(
       await screen.findByRole('heading', { name: 'Pedidos de Pizzaria Bella' }),
@@ -68,7 +68,7 @@ describe('restaurants', () => {
     expect(
       await screen.findByRole('heading', { name: 'Pedidos de todos os restaurantes' }),
     ).toBeInTheDocument()
-    await choose({ user, label: 'Restaurante', option: /Pizzaria Bella.*Ana Souza/ })
+    await choose({ user, label: 'Restaurante selecionado', option: /Pizzaria Bella.*Ana Souza/ })
 
     expect(
       await screen.findByRole('heading', { name: 'Pedidos de Pizzaria Bella' }),

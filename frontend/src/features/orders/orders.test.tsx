@@ -12,6 +12,7 @@ import {
   signedInAs,
 } from '@/test/fixtures'
 import { renderAt } from '@/test/render'
+import { choose } from '@/test/select'
 import { server } from '@/test/server'
 
 const restaurants = http.get('/api/restaurants', () => HttpResponse.json([burger, pizzaria]))
@@ -110,7 +111,7 @@ describe('order list', () => {
     const row = await screen.findByRole('row', { name: /00C0DE11/ })
     await user.click(within(row).getByRole('button', { name: 'Cancelar' }))
     const dialog = await screen.findByRole('dialog', { name: 'Cancelar o pedido #00C0DE11' })
-    await user.selectOptions(within(dialog).getByLabelText('Motivo'), 'Cliente desistiu')
+    await choose({ user, label: 'Motivo', option: 'Cliente desistiu' })
     await user.click(within(dialog).getByRole('button', { name: 'Confirmar cancelamento' }))
 
     expect(await within(row).findByText('Cancelado')).toBeInTheDocument()
@@ -128,7 +129,7 @@ describe('order list', () => {
     const row = await screen.findByRole('row', { name: /00C0DE11/ })
     await user.click(within(row).getByRole('button', { name: 'Cancelar' }))
     const dialog = await screen.findByRole('dialog')
-    await user.selectOptions(within(dialog).getByLabelText('Motivo'), 'Outro motivo')
+    await choose({ user, label: 'Motivo', option: 'Outro motivo' })
     await user.click(within(dialog).getByRole('button', { name: 'Confirmar cancelamento' }))
 
     expect(

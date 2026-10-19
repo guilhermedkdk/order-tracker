@@ -44,7 +44,7 @@ describe('customer autofill', () => {
     expect(await screen.findByDisplayValue('Maria Silva')).toBeInTheDocument()
     expect(screen.getByLabelText('Rua')).toHaveValue('Av. Paulista')
     expect(screen.getByLabelText('Complemento')).toHaveValue('ap 12')
-    expect(screen.getByLabelText('UF')).toHaveValue('SP')
+    expect(screen.getByRole('combobox', { name: 'UF' })).toHaveTextContent('SP')
     expect(screen.getByText(/Cliente encontrado/)).toBeInTheDocument()
   })
 

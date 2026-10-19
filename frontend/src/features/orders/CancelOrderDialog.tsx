@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
+import { ControlledSelect } from '@/components/ControlledSelect'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -15,7 +16,6 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field'
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Textarea } from '@/components/ui/textarea'
 import { showApiError } from '@/lib/form-errors'
 import { cancellationReasonSchema, useChangeStatus, type OrderActionTarget } from './api'
@@ -92,19 +92,17 @@ export function CancelOrderDialog({ order }: { order: OrderActionTarget }) {
             )}
             <Field data-invalid={!!errors.cancellationReason}>
               <FieldLabel htmlFor="cancellation-reason">Motivo</FieldLabel>
-              <NativeSelect
+              <ControlledSelect
+                control={form.control}
+                name="cancellationReason"
                 id="cancellation-reason"
-                className="w-full"
-                aria-invalid={!!errors.cancellationReason}
-                {...form.register('cancellationReason')}
-              >
-                <NativeSelectOption value="">Escolha o motivo</NativeSelectOption>
-                {cancellationReasonSchema.options.map((reason) => (
-                  <NativeSelectOption key={reason} value={reason}>
-                    {CANCELLATION_REASON_LABEL[reason]}
-                  </NativeSelectOption>
-                ))}
-              </NativeSelect>
+                placeholder="Escolha o motivo"
+                invalid={!!errors.cancellationReason}
+                options={cancellationReasonSchema.options.map((reason) => ({
+                  value: reason,
+                  label: CANCELLATION_REASON_LABEL[reason],
+                }))}
+              />
               <FieldError errors={[errors.cancellationReason]} />
             </Field>
             <Field data-invalid={!!errors.cancellationDetail}>
