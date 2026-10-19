@@ -6,12 +6,12 @@ const VIEW = 'visao'
 const STATUS = 'status'
 const PAGE = 'pagina'
 
-export const orderViewSchema = z.enum(['kanban', 'lista'])
+export const orderViewSchema = z.enum(['lista', 'kanban'])
 export type OrderView = z.infer<typeof orderViewSchema>
 
 /**
  * The view, the status filter and the page of the orders, kept in the URL next to
- * `?restaurante=`. The board is the default view, so only the list shows in the URL. Pages are
+ * `?restaurante=`. The list is the default view, so only the board shows in the URL. Pages are
  * counted from 1 here, as people read them; the API counts from 0.
  */
 export function useOrderListParams(): {
@@ -23,7 +23,7 @@ export function useOrderListParams(): {
   setPage: (page: number) => void
 } {
   const [params, setParams] = useSearchParams()
-  const view = orderViewSchema.safeParse(params.get(VIEW)).data ?? 'kanban'
+  const view = orderViewSchema.safeParse(params.get(VIEW)).data ?? 'lista'
   const status = orderStatusSchema.safeParse(params.get(STATUS)).data
   const requestedPage = Number(params.get(PAGE))
   const page = Number.isInteger(requestedPage) && requestedPage >= 1 ? requestedPage : 1
@@ -35,7 +35,7 @@ export function useOrderListParams(): {
     setView: (next) =>
       setParams((current) => {
         const updated = new URLSearchParams(current)
-        if (next === 'lista') {
+        if (next === 'kanban') {
           updated.set(VIEW, next)
         } else {
           updated.delete(VIEW)
@@ -75,7 +75,7 @@ export function listSearchFor({
   status: OrderStatus
 }): string {
   const next = new URLSearchParams(current)
-  next.set(VIEW, 'lista')
+  next.delete(VIEW)
   next.set(STATUS, status)
   next.delete(PAGE)
   return `?${next.toString()}`

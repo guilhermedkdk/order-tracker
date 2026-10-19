@@ -39,7 +39,7 @@ describe('order list filters', () => {
   it('filters by status from the status chips', async () => {
     const requests: Requested[] = []
     setup(requests)
-    const { user, router } = renderAt(`/pedidos?restaurante=${pizzaria.id}&visao=lista`)
+    const { user, router } = renderAt(`/pedidos?restaurante=${pizzaria.id}`)
 
     await user.click(await screen.findByRole('button', { name: 'Em preparo' }))
 
@@ -53,7 +53,7 @@ describe('order list filters', () => {
   it('pages through the list and stops at the last page', async () => {
     const requests: Requested[] = []
     setup(requests)
-    const { user } = renderAt(`/pedidos?restaurante=${pizzaria.id}&visao=lista`)
+    const { user } = renderAt(`/pedidos?restaurante=${pizzaria.id}`)
 
     expect(await screen.findByText('Página 1 de 3 · 45 pedidos')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Anterior' })).toBeDisabled()
@@ -68,7 +68,7 @@ describe('order list filters', () => {
   it('goes back to the first page when the status or the restaurant changes', async () => {
     const requests: Requested[] = []
     setup(requests)
-    const { user } = renderAt(`/pedidos?restaurante=${pizzaria.id}&visao=lista&pagina=3`)
+    const { user } = renderAt(`/pedidos?restaurante=${pizzaria.id}&pagina=3`)
 
     expect(await screen.findByText('Página 3 de 3 · 45 pedidos')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Entregue' }))

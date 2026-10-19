@@ -26,7 +26,7 @@ function boardApi(orders: () => Summary[], totals: Record<string, number> = {}) 
 const restaurants = http.get('/api/restaurants', () => HttpResponse.json([burger, pizzaria]))
 
 describe('order board', () => {
-  it('opens on the board, each order in the column of its status with the column total', async () => {
+  it('shows each order in the column of its status, with the column total', async () => {
     const preparing = orderSummary({
       id: '0199f0a0-0000-7000-8000-00000000beef',
       code: '0000BEEF',
@@ -40,7 +40,7 @@ describe('order board', () => {
       boardApi(() => [orderSummary(), preparing], { EM_PREPARO: 7 }),
     )
 
-    renderAt(`/pedidos?restaurante=${pizzaria.id}`)
+    renderAt(`/pedidos?restaurante=${pizzaria.id}&visao=kanban`)
 
     const received = await screen.findByRole('region', { name: 'Recebido' })
     expect(
@@ -69,7 +69,7 @@ describe('order board', () => {
         return HttpResponse.json(orderDetails(order))
       }),
     )
-    const { user } = renderAt(`/pedidos?restaurante=${pizzaria.id}`)
+    const { user } = renderAt(`/pedidos?restaurante=${pizzaria.id}&visao=kanban`)
 
     const received = await screen.findByRole('region', { name: 'Recebido' })
     const card = await within(received).findByRole('article', { name: 'Pedido #00C0DE11' })
@@ -91,7 +91,7 @@ describe('order board', () => {
       restaurants,
       boardApi(() => [delivered], { ENTREGUE: 32 }),
     )
-    const { user, router } = renderAt(`/pedidos?restaurante=${pizzaria.id}`)
+    const { user, router } = renderAt(`/pedidos?restaurante=${pizzaria.id}&visao=kanban`)
 
     const column = await screen.findByRole('region', { name: 'Entregue' })
     await user.click(await within(column).findByRole('link', { name: 'Ver todos os 32' }))
@@ -101,14 +101,10 @@ describe('order board', () => {
     ).toBeInTheDocument()
     expect(screen.getByRole('row', { name: /00C0DE11/ })).toBeInTheDocument()
     const search = new URLSearchParams(router.state.location.search)
-    expect(Object.fromEntries(search)).toEqual({
-      restaurante: pizzaria.id,
-      visao: 'lista',
-      status: 'ENTREGUE',
-    })
+    expect(Object.fromEntries(search)).toEqual({ restaurante: pizzaria.id, status: 'ENTREGUE' })
   })
 
-  it('switches between the board and the list, keeping the choice in the URL', async () => {
+  it('opens on the list and switches to the board, keeping the board in the URL', async () => {
     server.use(
       signedInAs(ana),
       restaurants,
@@ -116,14 +112,15 @@ describe('order board', () => {
     )
     const { user, router } = renderAt(`/pedidos?restaurante=${pizzaria.id}`)
 
-    await user.click(await screen.findByRole('tab', { name: 'Lista' }))
-
     expect(await screen.findByRole('row', { name: /00C0DE11/ })).toBeInTheDocument()
-    expect(router.state.location.search).toContain('visao=lista')
-
     await user.click(screen.getByRole('tab', { name: 'Kanban' }))
 
     expect(await screen.findByRole('region', { name: 'Recebido' })).toBeInTheDocument()
+    expect(router.state.location.search).toContain('visao=kanban')
+
+    await user.click(screen.getByRole('tab', { name: 'Lista' }))
+
+    expect(await screen.findByRole('row', { name: /00C0DE11/ })).toBeInTheDocument()
     expect(router.state.location.search).not.toContain('visao')
   })
 })

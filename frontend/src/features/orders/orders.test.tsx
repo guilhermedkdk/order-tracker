@@ -29,7 +29,7 @@ describe('order list', () => {
       }),
     )
 
-    renderAt(`/pedidos?restaurante=${pizzaria.id}&visao=lista`)
+    renderAt(`/pedidos?restaurante=${pizzaria.id}`)
 
     const row = await screen.findByRole('row', { name: /00C0DE11/ })
     expect(within(row).getByText('Maria Silva')).toBeInTheDocument()
@@ -59,7 +59,7 @@ describe('order list', () => {
       }),
     )
 
-    renderAt('/pedidos?visao=lista')
+    renderAt('/pedidos')
 
     const row = await screen.findByRole('row', { name: /0000BEEF/ })
     expect(within(row).getByText('Burger da Vila')).toBeInTheDocument()
@@ -83,7 +83,7 @@ describe('order list', () => {
         return HttpResponse.json(orderDetails(order))
       }),
     )
-    const { user } = renderAt(`/pedidos?restaurante=${pizzaria.id}&visao=lista`)
+    const { user } = renderAt(`/pedidos?restaurante=${pizzaria.id}`)
 
     const row = await screen.findByRole('row', { name: /00C0DE11/ })
     await user.click(within(row).getByRole('button', { name: 'Iniciar preparo' }))
@@ -106,7 +106,7 @@ describe('order list', () => {
         return HttpResponse.json(orderDetails(order))
       }),
     )
-    const { user } = renderAt(`/pedidos?restaurante=${pizzaria.id}&visao=lista`)
+    const { user } = renderAt(`/pedidos?restaurante=${pizzaria.id}`)
 
     const row = await screen.findByRole('row', { name: /00C0DE11/ })
     await user.click(within(row).getByRole('button', { name: 'Mais ações do pedido #00C0DE11' }))
@@ -125,7 +125,7 @@ describe('order list', () => {
       restaurants,
       http.get('/api/orders', () => HttpResponse.json(page([orderSummary()]))),
     )
-    const { user } = renderAt(`/pedidos?restaurante=${pizzaria.id}&visao=lista`)
+    const { user } = renderAt(`/pedidos?restaurante=${pizzaria.id}`)
 
     const row = await screen.findByRole('row', { name: /00C0DE11/ })
     await user.click(within(row).getByRole('button', { name: 'Mais ações do pedido #00C0DE11' }))
@@ -149,7 +149,7 @@ describe('order list', () => {
         HttpResponse.json({ detail: 'Faça login para continuar.' }, { status: 401 }),
       ),
     )
-    const { user } = renderAt(`/pedidos?restaurante=${pizzaria.id}&visao=lista`)
+    const { user } = renderAt(`/pedidos?restaurante=${pizzaria.id}`)
 
     const row = await screen.findByRole('row', { name: /00C0DE11/ })
     await user.click(within(row).getByRole('button', { name: 'Iniciar preparo' }))
@@ -173,7 +173,7 @@ describe('order list', () => {
         return HttpResponse.json(orderDetails(order))
       }),
     )
-    const { user } = renderAt(`/pedidos?restaurante=${pizzaria.id}&visao=lista`)
+    const { user } = renderAt(`/pedidos?restaurante=${pizzaria.id}`)
 
     const row = await screen.findByRole('row', { name: /00C0DE11/ })
     await user.click(within(row).getByRole('button', { name: 'Iniciar preparo' }))
@@ -199,7 +199,7 @@ describe('order list', () => {
         ),
       ),
     )
-    const { user } = renderAt(`/pedidos?restaurante=${pizzaria.id}&visao=lista`)
+    const { user } = renderAt(`/pedidos?restaurante=${pizzaria.id}`)
 
     const row = await screen.findByRole('row', { name: /00C0DE11/ })
     await user.click(within(row).getByRole('button', { name: 'Iniciar preparo' }))

@@ -33,13 +33,13 @@ export function OrdersPage() {
         <h1 className="font-heading text-2xl font-semibold tracking-tight">{title}</h1>
         <div className="flex items-center gap-3">
           <TabsList aria-label="Visão dos pedidos" className="h-9">
-            <TabsTrigger value="kanban" className="px-3">
-              <Columns3 />
-              Kanban
-            </TabsTrigger>
             <TabsTrigger value="lista" className="px-3">
               <List />
               Lista
+            </TabsTrigger>
+            <TabsTrigger value="kanban" className="px-3">
+              <Columns3 />
+              Kanban
             </TabsTrigger>
           </TabsList>
           <Button asChild size="lg">
@@ -50,11 +50,11 @@ export function OrdersPage() {
           </Button>
         </div>
       </header>
-      <TabsContent value="kanban">
-        <OrderBoard restaurantId={restaurantId} showRestaurant={showRestaurant} />
-      </TabsContent>
       <TabsContent value="lista">
         <OrderTable restaurantId={restaurantId} showRestaurant={showRestaurant} />
+      </TabsContent>
+      <TabsContent value="kanban">
+        <OrderBoard restaurantId={restaurantId} showRestaurant={showRestaurant} />
       </TabsContent>
     </Tabs>
   )
