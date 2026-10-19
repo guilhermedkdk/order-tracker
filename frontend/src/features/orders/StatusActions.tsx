@@ -9,22 +9,23 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { cn } from '@/lib/utils'
 import type { OrderActionTarget } from './api'
 import { CancelOrderDialog } from './CancelOrderDialog'
 import { ACTION_LABEL } from './labels'
 import { useMoveOrder } from './useMoveOrder'
 
 /**
- * The next status the API allows, as a button, and cancelling, which asks for a reason. The `menu`
- * layout, for list rows and board cards, keeps one line by tucking cancelling and the details link
- * into a "⋯" menu; `buttons` shows cancelling beside the next step.
+ * The next status the API allows, as a button, and cancelling, which asks for a reason. The `row`
+ * and `card` layouts keep to one line by tucking cancelling and the details link into a "⋯" menu,
+ * and `card` stretches the next step across the card; `buttons` shows cancelling beside it.
  */
 export function StatusActions({
   order,
   layout,
 }: {
   order: OrderActionTarget
-  layout: 'menu' | 'buttons'
+  layout: 'row' | 'card' | 'buttons'
 }) {
   const { move, isPending } = useMoveOrder()
   const [cancelling, setCancelling] = useState(false)
@@ -40,6 +41,7 @@ export function StatusActions({
           key={status}
           size="sm"
           variant="outline"
+          className={cn(layout === 'card' && 'flex-1')}
           disabled={isPending}
           onClick={() => move({ order, status })}
         >
@@ -57,7 +59,7 @@ export function StatusActions({
           Cancelar pedido
         </Button>
       )}
-      {layout === 'menu' && (
+      {layout !== 'buttons' && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button

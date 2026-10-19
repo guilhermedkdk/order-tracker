@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatCep, formatDateTime, formatMoney, formatPhone } from './format'
+import { formatCep, formatDateTime, formatElapsed, formatMoney, formatPhone } from './format'
 
 // Intl puts a no-break space after "R$"; compare with plain spaces.
 const plain = (text: string) => text.replace(/ /g, ' ')
@@ -20,5 +20,16 @@ describe('format', () => {
 
   it('masks the CEP', () => {
     expect(formatCep('01310100')).toBe('01310-100')
+  })
+
+  it('tells how long ago an order came in', () => {
+    const now = new Date('2026-10-17T18:30:00Z')
+    const ago = (since: string) => formatElapsed({ since, now })
+
+    expect(ago('2026-10-17T18:29:30Z')).toBe('agora')
+    expect(ago('2026-10-17T18:18:00Z')).toBe('há 12 min')
+    expect(ago('2026-10-17T16:05:00Z')).toBe('há 2 h')
+    expect(ago('2026-10-16T18:00:00Z')).toBe('há 1 dia')
+    expect(ago('2026-10-14T18:00:00Z')).toBe('há 3 dias')
   })
 })

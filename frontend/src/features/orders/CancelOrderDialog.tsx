@@ -40,7 +40,7 @@ type CancelOutput = z.output<typeof cancelSchema>
 
 /**
  * Asks why the order is being cancelled. It opens from a menu that closes first, so the open state
- * lives with the caller, and focus goes back to `returnFocus` when it closes.
+ * lives with the caller, and focus goes back to `returnFocus`, when given, as it closes.
  */
 export function CancelOrderDialog({
   order,
@@ -51,7 +51,7 @@ export function CancelOrderDialog({
   order: OrderActionTarget
   open: boolean
   onOpenChange: (open: boolean) => void
-  returnFocus: RefObject<HTMLElement | null>
+  returnFocus?: RefObject<HTMLElement | null>
 }) {
   const change = useChangeStatus()
   const form = useForm<CancelInput, unknown, CancelOutput>({
@@ -86,8 +86,10 @@ export function CancelOrderDialog({
     <Dialog open={open} onOpenChange={changeOpen}>
       <DialogContent
         onCloseAutoFocus={(event) => {
-          event.preventDefault()
-          returnFocus.current?.focus()
+          if (returnFocus) {
+            event.preventDefault()
+            returnFocus.current?.focus()
+          }
         }}
       >
         <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
