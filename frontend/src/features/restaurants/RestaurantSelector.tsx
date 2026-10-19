@@ -25,9 +25,12 @@ export function RestaurantSelector() {
 
   return (
     <Select value={value} onValueChange={select}>
-      <SelectTrigger aria-label="Restaurante" className="h-9 w-full max-w-64 min-w-0 gap-2">
+      <SelectTrigger
+        aria-label="Restaurante selecionado"
+        className="h-9 w-full max-w-64 min-w-0 gap-2 *:data-[slot=select-value]:flex-1"
+      >
         <Store className="text-muted-foreground" />
-        <SelectValue className="flex-1 text-left">
+        <SelectValue>
           <span className="truncate">{shown}</span>
         </SelectValue>
       </SelectTrigger>

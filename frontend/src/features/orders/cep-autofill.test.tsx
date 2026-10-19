@@ -40,7 +40,7 @@ describe('CEP autofill', () => {
     expect(await screen.findByDisplayValue('Avenida Paulista')).toBeInTheDocument()
     expect(screen.getByLabelText('Bairro')).toHaveValue('Bela Vista')
     expect(screen.getByLabelText('Cidade')).toHaveValue('São Paulo')
-    expect(screen.getByLabelText('UF')).toHaveValue('SP')
+    expect(screen.getByRole('combobox', { name: 'UF' })).toHaveTextContent('SP')
     expect(screen.getByLabelText('Complemento')).toHaveValue('')
   })
 

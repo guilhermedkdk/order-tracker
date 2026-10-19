@@ -25,7 +25,7 @@ async function fillRequiredFields(user: ReturnType<typeof renderAt>['user']) {
   await user.type(screen.getByLabelText('Número'), '1000')
   await user.type(screen.getByLabelText('Bairro'), 'Bela Vista')
   await user.type(screen.getByLabelText('Cidade'), 'São Paulo')
-  await user.selectOptions(screen.getByLabelText('UF'), 'SP')
+  await choose({ user, label: 'UF', option: 'SP' })
   await user.type(screen.getByLabelText('Item 1'), 'Pizza margherita')
   await user.clear(screen.getByLabelText('Quantidade do item 1'))
   await user.type(screen.getByLabelText('Quantidade do item 1'), '2')
@@ -51,7 +51,7 @@ describe('new order', () => {
     const { user } = renderAt(`/pedidos/novo?restaurante=${pizzaria.id}`)
 
     await fillRequiredFields(user)
-    await user.selectOptions(screen.getByLabelText('Forma de pagamento'), 'Pix')
+    await choose({ user, label: 'Forma de pagamento', option: 'Pix' })
 
     expect(screen.getByText('R$ 98,80')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Registrar pedido' }))
@@ -95,7 +95,7 @@ describe('new order', () => {
     const { user } = renderAt(`/pedidos/novo?restaurante=${pizzaria.id}`)
 
     await fillRequiredFields(user)
-    await user.selectOptions(screen.getByLabelText('Forma de pagamento'), 'Dinheiro')
+    await choose({ user, label: 'Forma de pagamento', option: 'Dinheiro' })
     await user.type(screen.getByLabelText('Troco para'), '50,00')
     await user.click(screen.getByRole('button', { name: 'Registrar pedido' }))
 
@@ -119,8 +119,8 @@ describe('new order', () => {
     const { user } = renderAt(`/pedidos/novo?restaurante=${pizzaria.id}`)
 
     await fillRequiredFields(user)
-    await user.selectOptions(screen.getByLabelText('Forma de pagamento'), 'Pix')
-    await choose({ user, label: 'Restaurante', option: 'Burger da Vila' })
+    await choose({ user, label: 'Forma de pagamento', option: 'Pix' })
+    await choose({ user, label: 'Restaurante selecionado', option: 'Burger da Vila' })
     await user.click(screen.getByRole('button', { name: 'Registrar pedido' }))
 
     await screen.findByText('Nenhum pedido ainda. Os novos aparecem aqui.')
@@ -136,10 +136,12 @@ describe('new order', () => {
     )
     const { user } = renderAt('/pedidos/novo')
 
-    const picker = await screen.findByLabelText('Restaurante', { selector: '#restaurant' })
-    await user.selectOptions(picker, 'Burger da Vila · Ana Souza')
+    await screen.findByRole('combobox', { name: 'Restaurante' })
+    await choose({ user, label: 'Restaurante', option: /Burger da Vila.*Ana Souza/ })
 
-    expect(picker).toHaveValue('outro-burger')
+    expect(screen.getByRole('combobox', { name: 'Restaurante' })).toHaveTextContent(
+      'Burger da Vila · Ana Souza',
+    )
   })
 
   it('adds and removes items, updating the total', async () => {

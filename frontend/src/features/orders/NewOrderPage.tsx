@@ -1,18 +1,20 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useEffect, type ReactNode } from 'react'
 import { useForm, useWatch, type FieldError as FormFieldError } from 'react-hook-form'
-import { useLocation, useNavigate } from 'react-router'
+import { Link, useLocation, useNavigate } from 'react-router'
+import { toast } from 'sonner'
+import { ControlledSelect } from '@/components/ControlledSelect'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Textarea } from '@/components/ui/textarea'
 import { useSelectedRestaurant } from '@/features/restaurants/selection'
 import { formatMoney } from '@/lib/format'
 import { showApiError } from '@/lib/form-errors'
 import { paymentMethodSchema, useCreateOrder } from './api'
+import { BackToOrders } from './BackToOrders'
 import { ItemsFields } from './ItemsFields'
 import { useCepAutofill } from './useCepAutofill'
 import { useCustomerAutofill } from './useCustomerAutofill'
@@ -69,7 +71,8 @@ export function NewOrderPage() {
 
   const onSubmit = form.handleSubmit(async (body) => {
     try {
-      await create.mutateAsync(body)
+      const order = await create.mutateAsync(body)
+      toast.success(`Pedido #${order.code} registrado.`)
       navigate({ pathname: '/pedidos', search })
     } catch (error) {
       showApiError({ form, error, fields: apiFieldPaths(items.length) })
@@ -77,39 +80,53 @@ export function NewOrderPage() {
   })
 
   return (
-    <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4 py-4">
-      <h1 className="font-heading text-2xl font-semibold">
-        Novo pedido{fixedRestaurant ? ` em ${fixedRestaurant.name}` : ''}
-      </h1>
+    <form onSubmit={onSubmit} noValidate className="flex flex-col gap-6">
+      <header className="flex flex-col gap-3">
+        <BackToOrders />
+        <div className="flex flex-col gap-1">
+          <h1 className="font-heading text-2xl font-semibold tracking-tight">
+            Novo pedido{fixedRestaurant ? ` em ${fixedRestaurant.name}` : ''}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            O total ao lado é uma prévia; o que vale é o calculado ao registrar.
+          </p>
+        </div>
+      </header>
       {errors.root && (
         <Alert variant="destructive">
           <AlertDescription>{errors.root.message}</AlertDescription>
         </Alert>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_20rem]">
-        <div className="flex flex-col gap-4">
+      <div className="grid items-start gap-6 lg:grid-cols-[1fr_22rem]">
+        <div className="flex flex-col gap-6">
           {!fixedRestaurant && (
             <Section title="Restaurante">
-              <Labeled id="restaurant" label="Restaurante" error={errors.restaurantId}>
-                <NativeSelect
+              <Labeled id="restaurant" label="Restaurante" hideLabel error={errors.restaurantId}>
+                <ControlledSelect
+                  control={form.control}
+                  name="restaurantId"
                   id="restaurant"
-                  className="w-full"
-                  aria-invalid={!!errors.restaurantId}
-                  {...form.register('restaurantId')}
-                >
-                  <NativeSelectOption value="">Escolha o restaurante</NativeSelectOption>
-                  {restaurants.map((restaurant) => (
-                    <NativeSelectOption key={restaurant.id} value={restaurant.id}>
-                      {restaurant.name} · {restaurant.ownerName}
-                    </NativeSelectOption>
-                  ))}
-                </NativeSelect>
+                  placeholder="Escolha o restaurante"
+                  invalid={!!errors.restaurantId}
+                  options={restaurants.map((restaurant) => ({
+                    value: restaurant.id,
+                    label: (
+                      <>
+                        {restaurant.name}
+                        <span className="text-muted-foreground"> · {restaurant.ownerName}</span>
+                      </>
+                    ),
+                  }))}
+                />
               </Labeled>
             </Section>
           )}
 
-          <Section title="Cliente">
+          <Section
+            title="Cliente"
+            description="Pelo telefone, quem já pediu neste restaurante é preenchido sozinho."
+          >
             <div className="grid gap-4 sm:grid-cols-2">
               <Labeled
                 id="customer-phone"
@@ -136,7 +153,10 @@ export function NewOrderPage() {
             </div>
           </Section>
 
-          <Section title="Endereço de entrega">
+          <Section
+            title="Endereço de entrega"
+            description="O CEP preenche rua, bairro, cidade e UF."
+          >
             <div className="grid gap-4 sm:grid-cols-6">
               <Labeled
                 id="cep"
@@ -219,19 +239,14 @@ export function NewOrderPage() {
                 error={errors.deliveryAddress?.state}
                 className="sm:col-span-1"
               >
-                <NativeSelect
+                <ControlledSelect
+                  control={form.control}
+                  name="deliveryAddress.state"
                   id="state"
-                  className="w-full"
-                  aria-invalid={!!errors.deliveryAddress?.state}
-                  {...form.register('deliveryAddress.state')}
-                >
-                  <NativeSelectOption value="">--</NativeSelectOption>
-                  {STATES.map((state) => (
-                    <NativeSelectOption key={state} value={state}>
-                      {state}
-                    </NativeSelectOption>
-                  ))}
-                </NativeSelect>
+                  placeholder="--"
+                  invalid={!!errors.deliveryAddress?.state}
+                  options={STATES.map((state) => ({ value: state, label: state }))}
+                />
               </Labeled>
             </div>
           </Section>
@@ -240,12 +255,8 @@ export function NewOrderPage() {
             <ItemsFields form={form} />
           </Section>
 
-          <Section title="Observações">
-            <Labeled
-              id="notes"
-              label="Observações para o restaurante ou o entregador"
-              error={errors.notes}
-            >
+          <Section title="Observações" description="Opcional, para o restaurante ou o entregador.">
+            <Labeled id="notes" label="Observações" hideLabel error={errors.notes}>
               <Textarea
                 id="notes"
                 rows={2}
@@ -256,7 +267,7 @@ export function NewOrderPage() {
           </Section>
         </div>
 
-        <div className="flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start">
+        <div className="flex flex-col gap-6 lg:sticky lg:top-24">
           <Section title="Pagamento">
             <FieldGroup>
               <Labeled id="delivery-fee" label="Taxa de entrega" error={errors.deliveryFee}>
@@ -273,19 +284,17 @@ export function NewOrderPage() {
                 label="Forma de pagamento"
                 error={errors.payment?.method}
               >
-                <NativeSelect
+                <ControlledSelect
+                  control={form.control}
+                  name="payment.method"
                   id="payment-method"
-                  className="w-full"
-                  aria-invalid={!!errors.payment?.method}
-                  {...form.register('payment.method')}
-                >
-                  <NativeSelectOption value="">Escolha</NativeSelectOption>
-                  {paymentMethodSchema.options.map((option) => (
-                    <NativeSelectOption key={option} value={option}>
-                      {PAYMENT_LABEL[option]}
-                    </NativeSelectOption>
-                  ))}
-                </NativeSelect>
+                  placeholder="Escolha"
+                  invalid={!!errors.payment?.method}
+                  options={paymentMethodSchema.options.map((option) => ({
+                    value: option,
+                    label: PAYMENT_LABEL[option],
+                  }))}
+                />
               </Labeled>
               {method === 'DINHEIRO' && (
                 <Labeled id="change-for" label="Troco para" error={errors.payment?.changeFor}>
@@ -298,19 +307,24 @@ export function NewOrderPage() {
                   />
                 </Labeled>
               )}
-              <dl className="grid grid-cols-2 gap-1 border-t pt-3 text-sm">
+              <dl className="grid grid-cols-2 gap-x-2 gap-y-1.5 border-t pt-4 text-sm">
                 <dt className="text-muted-foreground">Itens</dt>
                 <dd className="text-right tabular-nums">{formatMoney(totals.subtotal)}</dd>
                 <dt className="text-muted-foreground">Entrega</dt>
                 <dd className="text-right tabular-nums">{formatMoney(totals.fee)}</dd>
-                <dt className="font-medium">Total</dt>
-                <dd className="text-right font-semibold tabular-nums">
+                <dt className="self-end pt-1 font-medium">Total</dt>
+                <dd className="pt-1 text-right text-lg font-semibold tabular-nums">
                   {formatMoney(totals.total)}
                 </dd>
               </dl>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Registrando…' : 'Registrar pedido'}
-              </Button>
+              <div className="flex flex-col gap-2">
+                <Button type="submit" size="lg" disabled={isSubmitting}>
+                  {isSubmitting ? 'Registrando…' : 'Registrar pedido'}
+                </Button>
+                <Button asChild variant="ghost" size="lg">
+                  <Link to={{ pathname: '/pedidos', search }}>Cancelar</Link>
+                </Button>
+              </div>
             </FieldGroup>
           </Section>
         </div>
@@ -319,13 +333,22 @@ export function NewOrderPage() {
   )
 }
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
+function Section({
+  title,
+  description,
+  children,
+}: {
+  title: string
+  description?: string
+  children: ReactNode
+}) {
   return (
     <Card>
       <CardHeader>
         <CardTitle>
           <h2>{title}</h2>
         </CardTitle>
+        {description && <CardDescription>{description}</CardDescription>}
       </CardHeader>
       <CardContent>{children}</CardContent>
     </Card>
@@ -336,12 +359,15 @@ function Labeled({
   id,
   label,
   error,
+  hideLabel = false,
   description,
   className,
   children,
 }: {
   id: string
   label: string
+  // For a field alone in a section whose title already says what it is.
+  hideLabel?: boolean
   error: FormFieldError | undefined
   description?: string
   className?: string
@@ -349,7 +375,9 @@ function Labeled({
 }) {
   return (
     <Field data-invalid={!!error} className={className}>
-      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <FieldLabel htmlFor={id} className={hideLabel ? 'sr-only' : undefined}>
+        {label}
+      </FieldLabel>
       {children}
       {description && <FieldDescription>{description}</FieldDescription>}
       <FieldError errors={[error]} />
