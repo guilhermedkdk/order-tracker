@@ -1,6 +1,5 @@
-import { useState, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { useParams } from 'react-router'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Table,
@@ -16,12 +15,11 @@ import { useOrder, type Order } from './api'
 import { BackToOrders } from './BackToOrders'
 import { CANCELLATION_REASON_LABEL, PAYMENT_LABEL, STATUS_LABEL } from './labels'
 import { StatusActions } from './StatusActions'
-import { StatusBadge } from './StatusBadge'
+import { StatusBadge, StatusDot } from './StatusBadge'
 
 export function OrderDetailPage() {
   const { id = '' } = useParams()
   const order = useOrder(id)
-  const [actionError, setActionError] = useState<string | null>(null)
 
   return (
     <section className="flex flex-col gap-6">
@@ -43,13 +41,8 @@ export function OrderDetailPage() {
                 {order.data.restaurantName} · recebido em {formatDateTime(order.data.createdAt)}
               </p>
             </div>
-            <StatusActions order={order.data} onOutcome={setActionError} />
+            <StatusActions order={order.data} layout="buttons" />
           </header>
-          {actionError && (
-            <Alert variant="destructive">
-              <AlertDescription>{actionError}</AlertDescription>
-            </Alert>
-          )}
           <OrderDetails order={order.data} />
         </>
       )}
@@ -149,9 +142,9 @@ function OrderDetails({ order }: { order: Order }) {
         <ol aria-label="Linha do tempo" className="flex flex-col gap-4 border-l pl-4">
           {order.statusHistory.map((change, index) => (
             <li key={index} className="relative flex flex-col gap-0.5">
-              <span
-                aria-hidden="true"
-                className="absolute top-1.5 -left-[1.3rem] size-2 rounded-full bg-foreground"
+              <StatusDot
+                status={change.status}
+                className="absolute top-1.5 -left-[1.33rem] size-2.5 ring-4 ring-card"
               />
               <span className="font-medium">{STATUS_LABEL[change.status]}</span>
               <span className="text-sm text-muted-foreground">

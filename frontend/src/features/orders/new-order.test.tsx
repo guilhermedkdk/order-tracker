@@ -123,7 +123,7 @@ describe('new order', () => {
     await choose({ user, label: 'Restaurante selecionado', option: 'Burger da Vila' })
     await user.click(screen.getByRole('button', { name: 'Registrar pedido' }))
 
-    await screen.findByText('Nenhum pedido ainda. Os novos aparecem aqui.')
+    await screen.findByText('Nenhum pedido ainda.')
     expect(sent).toMatchObject({ restaurantId: burger.id })
   })
 
