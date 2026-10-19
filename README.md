@@ -234,8 +234,9 @@ documentos. O que fez a diferença foi o processo em volta:
 - **Teste antes da implementação.** Cada regra começou por um teste que falhava. Quando um teste veio
   depois do código, o agente quebrou o código de propósito para provar que o teste pegava a falha.
 - **Revisão antes de cada merge de fase.** Um segundo agente revisou o PR de cada fase procurando bugs:
-  foram 10 achados na fase 1 e 15 na fase 2, cada um corrigido com um teste de regressão antes do
-  merge.
+  foram 10 achados na fase 1, 15 na fase 2 e 13 na fase 3. Cada um foi corrigido antes do merge, com
+  teste de regressão quando dava para reproduzir pela API, menos um da fase 3, deixado de fora com o
+  motivo registrado.
 - **Conferência fora dos testes.** As telas foram abertas no navegador, e a demo publicada foi
   percorrida pela Vercel. Isso achou três problemas que os testes não viam: o Swagger sem a definição
   da API, o "Try it out" chamando o Render direto e o login sem token CSRF enquanto a API acordava.
