@@ -1,6 +1,7 @@
 import { ChevronDown, LogOut, RotateCcw, Store } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -12,6 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { useLogout, type User } from '@/features/auth/api'
 import { RestoreDemoDialog } from '@/features/demo/RestoreDemoDialog'
+import { ApiError } from '@/lib/http'
 
 /** Who is signed in, and what they can do from anywhere: new restaurant, restore the demo, sign out. */
 export function UserMenu({ user }: { user: User }) {
@@ -21,8 +23,15 @@ export function UserMenu({ user }: { user: User }) {
   const trigger = useRef<HTMLButtonElement>(null)
 
   async function signOut() {
-    await logout.mutateAsync()
-    navigate('/entrar', { replace: true })
+    try {
+      await logout.mutateAsync()
+      navigate('/entrar', { replace: true })
+    } catch (error) {
+      // A 401 means the session had already ended, and that alone sends the person to login.
+      if (!(error instanceof ApiError && error.status === 401)) {
+        toast.error(error instanceof ApiError ? error.message : 'Algo deu errado.')
+      }
+    }
   }
 
   return (

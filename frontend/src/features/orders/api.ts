@@ -1,5 +1,4 @@
 import {
-  keepPreviousData,
   queryOptions,
   useMutation,
   useQueries,
@@ -7,6 +6,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 import { z } from 'zod'
+import { customersKey } from '@/features/customers/api'
 import { api } from '@/lib/http'
 import type { NewOrderBody } from './order-form'
 
@@ -94,8 +94,8 @@ type OrderListParams = { restaurantId?: string; status?: OrderStatus; page: numb
 
 /**
  * One page (counted from 1) of the newest orders, of one restaurant or of every visible one when
- * `restaurantId` is absent, optionally of one status. The previous page stays on screen while the
- * next one loads.
+ * `restaurantId` is absent, optionally of one status. The previous page of the same restaurant stays
+ * on screen while the next one loads.
  */
 export function useOrders(params: OrderListParams) {
   return useQuery(orderListQuery(params))
@@ -123,7 +123,7 @@ export function useOrderBoard({ restaurantId }: { restaurantId?: string }) {
 
 function orderListQuery({ restaurantId, status, page }: OrderListParams) {
   return queryOptions({
-    queryKey: [...ordersKey, 'list', { restaurantId, status, page }],
+    queryKey: [...ordersKey, 'list', { restaurantId, status, page }] as const,
     queryFn: () => {
       const search = new URLSearchParams({ page: String(page - 1) })
       if (restaurantId) {
@@ -134,7 +134,9 @@ function orderListQuery({ restaurantId, status, page }: OrderListParams) {
       }
       return api({ path: `/orders?${search.toString()}`, schema: orderPageSchema })
     },
-    placeholderData: keepPreviousData,
+    // Another restaurant's orders never stay on screen: acting on them would change the wrong one.
+    placeholderData: (previous, previousQuery) =>
+      previousQuery?.queryKey[2].restaurantId === restaurantId ? previous : undefined,
   })
 }
 
@@ -151,7 +153,11 @@ export function useCreateOrder() {
   return useMutation({
     mutationFn: (body: NewOrderBody) =>
       api({ path: '/orders', method: 'POST', body, schema: orderSchema }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ordersKey }),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ordersKey }),
+        queryClient.invalidateQueries({ queryKey: customersKey }),
+      ]),
   })
 }
 
@@ -167,6 +173,7 @@ export function useChangeStatus() {
   return useMutation({
     mutationFn: ({ orderId, ...body }: StatusChangeInput) =>
       api({ path: `/orders/${orderId}/status`, method: 'PATCH', body, schema: orderSchema }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ordersKey }),
+    // A refusal usually means the order changed elsewhere, so the screen reloads either way.
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ordersKey }),
   })
 }

@@ -86,4 +86,21 @@ describe('authentication', () => {
 
     expect(await screen.findByRole('heading', { name: 'Entrar' })).toBeInTheDocument()
   })
+
+  it('stays signed in and says why when signing out fails', async () => {
+    server.use(
+      signedInAs(ana),
+      noRestaurants,
+      http.post('/api/auth/logout', () => HttpResponse.error()),
+    )
+    const { user } = renderAt('/')
+
+    await user.click(await screen.findByRole('button', { name: 'Ana Souza' }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Sair' }))
+
+    expect(
+      await screen.findByText('Não foi possível falar com o servidor. Tente de novo.'),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Ana Souza' })).toBeInTheDocument()
+  })
 })

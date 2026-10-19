@@ -1,41 +1,29 @@
 import { useRef, useState, type ChangeEvent } from 'react'
-import type { UseFormReturn } from 'react-hook-form'
 import { lookupCep, type CepAddress } from '@/lib/viacep'
-import type { NewOrderBody, OrderFormInput } from './order-form'
+import type { Autofill } from './autofill'
 
-type Form = UseFormReturn<OrderFormInput, unknown, NewOrderBody>
 export type CepStatus = 'idle' | 'loading' | 'found' | 'not-found' | 'failed'
-
-const FIELDS = {
-  street: 'deliveryAddress.street',
-  neighborhood: 'deliveryAddress.neighborhood',
-  city: 'deliveryAddress.city',
-  state: 'deliveryAddress.state',
-} as const satisfies Record<keyof CepAddress, string>
 
 /**
  * Fills the address from ViaCEP when the person types a CEP. It runs from the CEP field's own
- * change, so an address filled from the customer base is not looked up again. A field is filled
- * only while it is empty or still holds the previous CEP's answer: what was typed is kept.
+ * change, so a CEP filled from the customer base is not looked up again. The answer replaces an
+ * address filled before, from another CEP or the customer base, but never what the person typed.
  */
-export function useCepAutofill(form: Form): {
+export function useCepAutofill(autofill: Autofill): {
   status: CepStatus
   onCepChange: (event: ChangeEvent<HTMLInputElement>) => void
 } {
   const [status, setStatus] = useState<CepStatus>('idle')
   const latest = useRef('')
-  const lastFilled = useRef<Partial<CepAddress>>({})
 
   function apply(address: CepAddress) {
-    for (const key of Object.keys(FIELDS) as (keyof CepAddress)[]) {
-      const field = FIELDS[key]
-      const current = form.getValues(field)
-      const untouched = current.trim() === '' || current === lastFilled.current[key]
-      if (untouched && address[key] !== '') {
-        form.setValue(field, address[key], { shouldDirty: true })
-      }
-    }
-    lastFilled.current = address
+    autofill.fill('deliveryAddress.street', address.street)
+    autofill.fill('deliveryAddress.neighborhood', address.neighborhood)
+    autofill.fill('deliveryAddress.city', address.city)
+    autofill.fill('deliveryAddress.state', address.state)
+    // A number or complement filled with an earlier address does not belong to this one.
+    autofill.fill('deliveryAddress.number', '')
+    autofill.fill('deliveryAddress.complement', '')
   }
 
   function onCepChange(event: ChangeEvent<HTMLInputElement>) {

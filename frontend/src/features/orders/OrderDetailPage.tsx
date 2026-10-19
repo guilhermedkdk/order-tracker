@@ -1,6 +1,4 @@
-import type { ReactNode } from 'react'
 import { useParams } from 'react-router'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Table,
   TableBody,
@@ -14,6 +12,7 @@ import { formatCep, formatDateTime, formatMoney, formatPhone } from '@/lib/forma
 import { useOrder, type Order } from './api'
 import { BackToOrders } from './BackToOrders'
 import { CANCELLATION_REASON_LABEL, PAYMENT_LABEL, STATUS_LABEL } from './labels'
+import { Section } from './Section'
 import { StatusActions } from './StatusActions'
 import { StatusBadge, StatusDot } from './StatusBadge'
 
@@ -161,18 +160,5 @@ function OrderDetails({ order }: { order: Order }) {
         </ol>
       </Section>
     </div>
-  )
-}
-
-function Section({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>
-          <h2>{title}</h2>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-1">{children}</CardContent>
-    </Card>
   )
 }

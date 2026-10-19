@@ -20,7 +20,7 @@ export function useOrderListParams(): {
   page: number
   setView: (view: OrderView) => void
   setStatus: (status: OrderStatus | undefined) => void
-  setPage: (page: number) => void
+  setPage: (page: number, options?: { replace?: boolean }) => void
 } {
   const [params, setParams] = useSearchParams()
   const view = orderViewSchema.safeParse(params.get(VIEW)).data ?? 'lista'
@@ -57,13 +57,24 @@ export function useOrderListParams(): {
         updated.delete(PAGE)
         return updated
       }),
-    setPage: (next) =>
-      setParams((current) => {
-        const updated = new URLSearchParams(current)
-        updated.set(PAGE, String(next))
-        return updated
-      }),
+    setPage: (next, options) =>
+      setParams(
+        (current) => {
+          const updated = new URLSearchParams(current)
+          updated.set(PAGE, String(next))
+          return updated
+        },
+        { replace: options?.replace },
+      ),
   }
+}
+
+/** The search of the list where a new order shows: the same restaurant and view, every status, first page. */
+export function newestSearchFor(current: URLSearchParams): string {
+  const next = new URLSearchParams(current)
+  next.delete(STATUS)
+  next.delete(PAGE)
+  return `?${next.toString()}`
 }
 
 /** The search of the list filtered by `status`, keeping the selected restaurant from `current`. */

@@ -10,9 +10,10 @@ import {
   useSensors,
   type Announcements,
   type DragEndEvent,
+  type DraggableSyntheticListeners,
   type UniqueIdentifier,
 } from '@dnd-kit/core'
-import { useId, useState, type ReactNode } from 'react'
+import { useId, useState, type ReactNode, type SyntheticEvent } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router'
 import { Skeleton } from '@/components/ui/skeleton'
 import { formatDateTime, formatElapsed, formatMoney } from '@/lib/format'
@@ -234,7 +235,7 @@ function BoardCard({
   return (
     <li
       ref={setNodeRef}
-      {...listeners}
+      {...fromCardOnly(listeners)}
       // Lets a swipe that starts on a card still scroll; the touch sensor waits for a hold.
       style={{ touchAction: 'manipulation' }}
       className={cn(isDragging && 'opacity-40', moving && 'animate-pulse')}
@@ -266,6 +267,24 @@ function BoardCard({
         )}
       </article>
     </li>
+  )
+}
+
+// A menu or dialog opened from a card renders elsewhere in the page, yet its events bubble to the
+// card through React. Only a press on the card itself starts a drag.
+function fromCardOnly(listeners: DraggableSyntheticListeners): DraggableSyntheticListeners {
+  if (!listeners) {
+    return undefined
+  }
+  return Object.fromEntries(
+    Object.entries(listeners).map(([name, handler]) => [
+      name,
+      (event: SyntheticEvent<HTMLElement>) => {
+        if (event.target instanceof Node && event.currentTarget.contains(event.target)) {
+          handler(event)
+        }
+      },
+    ]),
   )
 }
 

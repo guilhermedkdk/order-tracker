@@ -28,7 +28,8 @@ export function StatusActions({
   layout: 'row' | 'card' | 'buttons'
 }) {
   const { move, isPending } = useMoveOrder()
-  const [cancelling, setCancelling] = useState(false)
+  // A list has one of these per order, so the dialog and its form mount on the first cancel only.
+  const [dialog, setDialog] = useState<'unmounted' | 'open' | 'closed'>('unmounted')
   const opener = useRef<HTMLButtonElement>(null)
   const { search } = useLocation()
   const forward = order.allowedNextStatuses.filter((status) => status !== 'CANCELADO')
@@ -54,7 +55,7 @@ export function StatusActions({
           size="sm"
           variant="ghost"
           className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-          onClick={() => setCancelling(true)}
+          onClick={() => setDialog('open')}
         >
           Cancelar pedido
         </Button>
@@ -81,7 +82,7 @@ export function StatusActions({
             {canCancel && (
               <>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem variant="destructive" onSelect={() => setCancelling(true)}>
+                <DropdownMenuItem variant="destructive" onSelect={() => setDialog('open')}>
                   <XCircle />
                   Cancelar pedido
                 </DropdownMenuItem>
@@ -90,11 +91,11 @@ export function StatusActions({
           </DropdownMenuContent>
         </DropdownMenu>
       )}
-      {canCancel && (
+      {canCancel && dialog !== 'unmounted' && (
         <CancelOrderDialog
           order={order}
-          open={cancelling}
-          onOpenChange={setCancelling}
+          open={dialog === 'open'}
+          onOpenChange={(open) => setDialog(open ? 'open' : 'closed')}
           returnFocus={opener}
         />
       )}

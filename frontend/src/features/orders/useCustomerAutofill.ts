@@ -1,15 +1,21 @@
 import { useEffect } from 'react'
-import { useWatch, type Path, type UseFormReturn } from 'react-hook-form'
+import { useWatch, type UseFormReturn } from 'react-hook-form'
 import { useCustomerLookup } from '@/features/customers/api'
+import type { Autofill } from './autofill'
 import type { NewOrderBody, OrderFormInput } from './order-form'
-
-type Form = UseFormReturn<OrderFormInput, unknown, NewOrderBody>
 
 /**
  * Looks the typed phone up in the restaurant's customer base and fills the name and address with
- * the customer's last order. Only empty fields are filled, so nothing typed is lost.
+ * the customer's last order. A corrected phone replaces what the previous customer filled; what the
+ * person typed stays.
  */
-export function useCustomerAutofill(form: Form): 'idle' | 'found' | 'new' {
+export function useCustomerAutofill({
+  form,
+  autofill,
+}: {
+  form: UseFormReturn<OrderFormInput, unknown, NewOrderBody>
+  autofill: Autofill
+}): 'idle' | 'found' | 'new' {
   const [restaurantId, phone] = useWatch({
     control: form.control,
     name: ['restaurantId', 'customer.phone'],
@@ -21,29 +27,23 @@ export function useCustomerAutofill(form: Form): 'idle' | 'found' | 'new' {
     if (!customer) {
       return
     }
+    autofill.fill('customer.name', customer.name)
+    // The address goes with its CEP: once the person types a CEP, the address is theirs.
+    if (!autofill.untouched('deliveryAddress.cep')) {
+      return
+    }
     const { lastAddress: address } = customer
-    fillIfEmpty(form, 'customer.name', customer.name)
-    fillIfEmpty(form, 'deliveryAddress.cep', address.cep)
-    fillIfEmpty(form, 'deliveryAddress.street', address.street)
-    fillIfEmpty(form, 'deliveryAddress.number', address.number)
-    fillIfEmpty(form, 'deliveryAddress.complement', address.complement ?? '')
-    fillIfEmpty(form, 'deliveryAddress.neighborhood', address.neighborhood)
-    fillIfEmpty(form, 'deliveryAddress.city', address.city)
-    fillIfEmpty(form, 'deliveryAddress.state', address.state)
-  }, [customer, form])
+    autofill.fill('deliveryAddress.cep', address.cep)
+    autofill.fill('deliveryAddress.street', address.street)
+    autofill.fill('deliveryAddress.number', address.number)
+    autofill.fill('deliveryAddress.complement', address.complement ?? '')
+    autofill.fill('deliveryAddress.neighborhood', address.neighborhood)
+    autofill.fill('deliveryAddress.city', address.city)
+    autofill.fill('deliveryAddress.state', address.state)
+  }, [customer, autofill])
 
   if (customer === undefined) {
     return 'idle'
   }
   return customer ? 'found' : 'new'
-}
-
-function fillIfEmpty(
-  form: Form,
-  field: Extract<Path<OrderFormInput>, `customer.${string}` | `deliveryAddress.${string}`>,
-  value: string,
-) {
-  if (form.getValues(field).trim() === '') {
-    form.setValue(field, value, { shouldDirty: true, shouldValidate: form.formState.isSubmitted })
-  }
 }

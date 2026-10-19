@@ -84,6 +84,48 @@ describe('order board', () => {
     expect(sent).toEqual({ status: 'EM_PREPARO' })
   })
 
+  it('picks a card up when the mouse drags it', async () => {
+    server.use(
+      signedInAs(ana),
+      restaurants,
+      boardApi(() => [orderSummary()]),
+    )
+    const { user } = renderAt(`/pedidos?restaurante=${pizzaria.id}&visao=kanban`)
+
+    const card = await screen.findByRole('article', { name: 'Pedido #00C0DE11' })
+    const name = within(card).getByText('Maria Silva')
+    await user.pointer([
+      { keys: '[MouseLeft>]', target: name, coords: { clientX: 10, clientY: 10 } },
+      { target: name, coords: { clientX: 60, clientY: 10 } },
+    ])
+
+    expect(await screen.findByText('Pedido #00C0DE11 pego.')).toBeInTheDocument()
+    await user.pointer({ keys: '[/MouseLeft]', target: name })
+  })
+
+  it('does not drag the card when the mouse drags inside a dialog opened from it', async () => {
+    server.use(
+      signedInAs(ana),
+      restaurants,
+      boardApi(() => [orderSummary()]),
+    )
+    const { user } = renderAt(`/pedidos?restaurante=${pizzaria.id}&visao=kanban`)
+
+    const card = await screen.findByRole('article', { name: 'Pedido #00C0DE11' })
+    await user.click(within(card).getByRole('button', { name: 'Mais ações do pedido #00C0DE11' }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Cancelar pedido' }))
+    const detail = within(await screen.findByRole('dialog')).getByLabelText('Detalhe')
+    // Selecting text in the field moves the mouse with the button held down.
+    await user.pointer([
+      { keys: '[MouseLeft>]', target: detail, coords: { clientX: 10, clientY: 10 } },
+      { target: detail, coords: { clientX: 60, clientY: 10 } },
+      { keys: '[/MouseLeft]', target: detail },
+    ])
+
+    expect(screen.queryByText(/Pedido #00C0DE11 (pego|solto)/)).not.toBeInTheDocument()
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+  })
+
   it('takes a column with more orders than it shows to the list of that status', async () => {
     const delivered = orderSummary({ status: 'ENTREGUE', allowedNextStatuses: [] })
     server.use(

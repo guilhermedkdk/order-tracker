@@ -6,7 +6,6 @@ import { toast } from 'sonner'
 import { ControlledSelect } from '@/components/ControlledSelect'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -14,11 +13,14 @@ import { useSelectedRestaurant } from '@/features/restaurants/selection'
 import { formatMoney } from '@/lib/format'
 import { showApiError } from '@/lib/form-errors'
 import { paymentMethodSchema, useCreateOrder } from './api'
+import { useAutofill } from './autofill'
 import { BackToOrders } from './BackToOrders'
 import { ItemsFields } from './ItemsFields'
+import { newestSearchFor } from './list-params'
 import { useCepAutofill } from './useCepAutofill'
 import { useCustomerAutofill } from './useCustomerAutofill'
 import { PAYMENT_LABEL } from './labels'
+import { Section } from './Section'
 import {
   apiFieldPaths,
   emptyOrder,
@@ -31,7 +33,7 @@ import {
 
 const CUSTOMER_HINT = {
   idle: undefined,
-  found: 'Cliente encontrado: preenchemos os campos vazios com o último pedido.',
+  found: 'Cliente encontrado: preenchemos com o último pedido o que você não digitou.',
   new: 'Cliente novo neste restaurante.',
 } as const
 
@@ -66,14 +68,15 @@ export function NewOrderPage() {
     name: ['items', 'deliveryFee', 'payment.method'],
   })
   const totals = previewTotals({ items, deliveryFee })
-  const customerLookup = useCustomerAutofill(form)
-  const cep = useCepAutofill(form)
+  const autofill = useAutofill(form)
+  const customerLookup = useCustomerAutofill({ form, autofill })
+  const cep = useCepAutofill(autofill)
 
   const onSubmit = form.handleSubmit(async (body) => {
     try {
       const order = await create.mutateAsync(body)
       toast.success(`Pedido #${order.code} registrado.`)
-      navigate({ pathname: '/pedidos', search })
+      navigate({ pathname: '/pedidos', search: newestSearchFor(new URLSearchParams(search)) })
     } catch (error) {
       showApiError({ form, error, fields: apiFieldPaths(items.length) })
     }
@@ -330,28 +333,6 @@ export function NewOrderPage() {
         </div>
       </div>
     </form>
-  )
-}
-
-function Section({
-  title,
-  description,
-  children,
-}: {
-  title: string
-  description?: string
-  children: ReactNode
-}) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>
-          <h2>{title}</h2>
-        </CardTitle>
-        {description && <CardDescription>{description}</CardDescription>}
-      </CardHeader>
-      <CardContent>{children}</CardContent>
-    </Card>
   )
 }
 

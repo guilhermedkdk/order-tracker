@@ -81,7 +81,51 @@ describe('CEP autofill', () => {
     ).toBeInTheDocument()
   })
 
-  it('does not replace an address that came from the customer base', async () => {
+  it('replaces an address from the customer base when a new CEP is typed', async () => {
+    const { user } = setup(
+      http.get(VIACEP, ({ params }) =>
+        params.cep === '22041001'
+          ? HttpResponse.json({
+              cep: '22041-001',
+              logradouro: 'Avenida Atlântica',
+              bairro: 'Copacabana',
+              localidade: 'Rio de Janeiro',
+              uf: 'RJ',
+            })
+          : HttpResponse.json({ erro: 'true' }),
+      ),
+      http.get('/api/customers', () =>
+        HttpResponse.json({
+          name: 'Maria Silva',
+          phone: '11987654321',
+          lastAddress: {
+            cep: '01310100',
+            street: 'Av. Paulista',
+            number: '1000',
+            complement: 'ap 12',
+            neighborhood: 'Bela Vista',
+            city: 'São Paulo',
+            state: 'SP',
+          },
+        }),
+      ),
+    )
+
+    await user.type(await screen.findByLabelText('Telefone'), '11987654321')
+    await screen.findByDisplayValue('Av. Paulista')
+    await user.clear(screen.getByLabelText('CEP'))
+    await user.type(screen.getByLabelText('CEP'), '22041-001')
+
+    expect(await screen.findByDisplayValue('Avenida Atlântica')).toBeInTheDocument()
+    expect(screen.getByLabelText('Bairro')).toHaveValue('Copacabana')
+    expect(screen.getByLabelText('Cidade')).toHaveValue('Rio de Janeiro')
+    expect(screen.getByRole('combobox', { name: 'UF' })).toHaveTextContent('RJ')
+    // The number and complement were of the old address.
+    expect(screen.getByLabelText('Número')).toHaveValue('')
+    expect(screen.getByLabelText('Complemento')).toHaveValue('')
+  })
+
+  it('does not look the CEP up when the customer base fills it', async () => {
     let viaCepCalls = 0
     const { user } = setup(
       http.get(VIACEP, () => {

@@ -1,4 +1,5 @@
 import { Inbox } from 'lucide-react'
+import { useEffect } from 'react'
 import { Link, useLocation } from 'react-router'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
@@ -31,14 +32,23 @@ export function OrderTable({
   const { status, page, setStatus, setPage } = useOrderListParams()
   const orders = useOrders({ restaurantId, status, page })
   const { search } = useLocation()
+  const lastPage =
+    orders.data && !orders.isPlaceholderData ? Math.max(orders.data.totalPages, 1) : undefined
+  const pastLastPage = lastPage !== undefined && page > lastPage
+  // An old link, or the last order of the last page moving on, lands past the end.
+  useEffect(() => {
+    if (lastPage !== undefined && pastLastPage) {
+      setPage(lastPage, { replace: true })
+    }
+  }, [lastPage, pastLastPage, setPage])
 
   return (
     <div className="flex flex-col gap-4">
       <StatusFilter value={status} onChange={setStatus} />
 
-      {orders.isPending && <TableSkeleton />}
+      {(orders.isPending || pastLastPage) && <TableSkeleton />}
       {orders.isError && <p className="text-destructive">{orders.error.message}</p>}
-      {orders.data && orders.data.content.length === 0 && (
+      {orders.data && !pastLastPage && orders.data.content.length === 0 && (
         <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed px-6 py-14 text-center">
           <Inbox className="size-8 text-muted-foreground/60" />
           <p className="font-medium">
