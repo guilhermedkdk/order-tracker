@@ -1,3 +1,4 @@
+import { ShieldCheck, Store } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { FieldSeparator } from '@/components/ui/field'
 import { useLogin } from '@/features/auth/api'
@@ -25,23 +26,27 @@ export function DemoLogin({
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-5">
       <FieldSeparator>ou use uma conta de demonstração</FieldSeparator>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-3">
         <Button
           type="button"
           variant="outline"
+          size="lg"
           disabled={login.isPending}
           onClick={() => enterAs(DEMO_OWNER_EMAIL)}
         >
+          <Store />
           Entrar como dono
         </Button>
         <Button
           type="button"
           variant="outline"
+          size="lg"
           disabled={login.isPending}
           onClick={() => enterAs(DEMO_ADMIN_EMAIL)}
         >
+          <ShieldCheck />
           Entrar como admin
         </Button>
       </div>

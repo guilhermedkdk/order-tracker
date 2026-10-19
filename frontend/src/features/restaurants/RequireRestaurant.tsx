@@ -6,7 +6,7 @@ export function RequireRestaurant() {
   const { selection } = useSelectedRestaurant()
 
   if (selection.kind === 'loading') {
-    return <p className="py-8 text-muted-foreground">Carregando…</p>
+    return <p className="py-8 text-sm text-muted-foreground">Carregando…</p>
   }
   if (selection.kind === 'none') {
     return <Navigate to="/restaurantes/novo" replace />
