@@ -3,6 +3,16 @@
 Log append-only, com a entrada mais nova no topo. Cada entrada registra o que uma sessão futura faria
 errado sem ela.
 
+### 2026-10-19 - JVM ajustada para acordar com um décimo de CPU
+
+**Armadilha:** a instância gratuita do Render tem 0,1 CPU, e a partida da API é quase toda CPU: JIT e
+coletor de memória disputam o pouco que há. Com 0,1 CPU e 512 MB, a API subia em 157 s, acima dos
+120 s que a Vercel espera.
+**Regra:** a imagem roda com `-XX:TieredStopAtLevel=1 -XX:+UseSerialGC`, que na mesma medição subiu em
+89 s. A API perde pico de desempenho, que esta demo não usa. Tirar essas opções devolve a partida aos
+157 s.
+**Onde:** `backend/Dockerfile`.
+
 ### 2026-10-19 - Escrita sem token CSRF não sai do navegador
 
 **Armadilha:** o Render gratuito levou 83 s para acordar numa medição, perto dos 120 s que a Vercel
