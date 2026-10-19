@@ -1,5 +1,6 @@
 package io.github.guilhermedkdk.ordertracker.auth;
 
+import static io.github.guilhermedkdk.ordertracker.ApiSession.read;
 import static io.github.guilhermedkdk.ordertracker.ApiSession.uniqueEmail;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -7,11 +8,17 @@ import io.github.guilhermedkdk.ordertracker.ApiSession;
 import io.github.guilhermedkdk.ordertracker.IntegrationTest;
 import io.github.guilhermedkdk.ordertracker.TestClock;
 import java.time.Duration;
+import java.time.Instant;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockCookie;
+import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+import org.springframework.security.oauth2.jwt.JwsHeader;
+import org.springframework.security.oauth2.jwt.JwtClaimsSet;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 
 @IntegrationTest
@@ -22,6 +29,9 @@ class SessionRenewalTests {
 
     @Autowired
     TestClock clock;
+
+    @Autowired
+    JwtEncoder encoder;
 
     @AfterEach
     void backToRealTime() {
@@ -105,6 +115,56 @@ class SessionRenewalTests {
         var sameCookieLater = new ApiSession(mvc);
         sameCookieLater.setCookie("ot_refresh", refresh);
         assertThat(sameCookieLater.post("/api/auth/refresh")).hasStatus(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Test
+    void signingInAgainEndsTheSessionTheBrowserHadBefore() {
+        var browser = new ApiSession(mvc);
+        String email = uniqueEmail();
+        browser.signup("Ana Souza", email, "segredo123");
+        String previous = browser.cookie("ot_refresh");
+
+        browser.post("/api/auth/login", """
+                {"email": "%s", "password": "segredo123"}
+                """.formatted(email));
+
+        var withPrevious = new ApiSession(mvc);
+        withPrevious.setCookie("ot_refresh", previous);
+        assertThat(withPrevious.post("/api/auth/refresh")).hasStatus(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Test
+    void aRefusedRenewalClearsTheSessionCookies() {
+        var browser = new ApiSession(mvc);
+        browser.setCookie("ot_refresh", "token-desconhecido");
+
+        var renewal = browser.post("/api/auth/refresh");
+
+        assertThat(renewal).hasStatus(HttpStatus.UNAUTHORIZED);
+        assertThat(renewal.getResponse().getCookie("ot_refresh").getMaxAge()).isZero();
+        assertThat(renewal.getResponse().getCookie("ot_session").getMaxAge()).isZero();
+    }
+
+    @Test
+    void anAccessTokenOfAnotherTypeIsRefused() {
+        var browser = new ApiSession(mvc);
+        String userId = read(browser.signup("Ana Souza", uniqueEmail(), "segredo123"), "$.id");
+        Instant now = clock.instant();
+        JwtClaimsSet claims = JwtClaimsSet.builder()
+                .issuer("order-tracker")
+                .subject(userId)
+                .issuedAt(now)
+                .expiresAt(now.plus(Duration.ofMinutes(10)))
+                .claim("name", "Ana Souza")
+                .claim("email", "ana@example.com")
+                .claim("role", "DONO")
+                .build();
+        JwsHeader header = JwsHeader.with(MacAlgorithm.HS256).type("at+jwt").build();
+        browser.setCookie(
+                "ot_session",
+                encoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue());
+
+        assertThat(browser.get("/api/auth/me")).hasStatus(HttpStatus.UNAUTHORIZED);
     }
 
     @Test

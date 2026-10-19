@@ -1,4 +1,4 @@
-import { act, screen, within } from '@testing-library/react'
+import { act, screen, waitFor, within } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { openStream, openStreamCount } from '@/test/event-source'
@@ -116,6 +116,32 @@ describe('order list', () => {
     )
 
     expect(await within(row).findByText('Em preparo')).toBeInTheDocument()
+  })
+
+  it('reloads once for a burst of streamed changes', async () => {
+    let requests = 0
+    server.use(
+      signedInAs(ana),
+      restaurants,
+      http.get('/api/orders', () => {
+        requests += 1
+        return HttpResponse.json(page([orderSummary()]))
+      }),
+    )
+    renderAt(`/pedidos?restaurante=${pizzaria.id}`)
+    await screen.findByRole('row', { name: /00C0DE11/ })
+    const before = requests
+
+    // As when the admin restores the demo: one commit, many orders.
+    act(() => {
+      for (let index = 0; index < 5; index += 1) {
+        openStream('/orders/stream').emit('status', { status: 'RECEBIDO' })
+      }
+    })
+
+    await waitFor(() => expect(requests).toBe(before + 1))
+    await new Promise((resolve) => setTimeout(resolve, 500))
+    expect(requests).toBe(before + 1)
   })
 
   it('closes the stream while the tab is hidden and catches up when it is back', async () => {

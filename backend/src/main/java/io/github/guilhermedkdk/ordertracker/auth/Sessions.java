@@ -49,8 +49,12 @@ class Sessions implements BearerTokenResolver {
         this.properties = properties;
     }
 
-    // The cookies of a new session for someone who just signed up or in.
-    HttpHeaders open(CurrentUser user) {
+    // The cookies of a new session for someone who just signed up or in. The session the browser had
+    // before, if any, ends: its refresh token would otherwise stay valid with nobody using it.
+    HttpHeaders open(CurrentUser user, String previousRefreshToken) {
+        if (previousRefreshToken != null && !previousRefreshToken.isBlank()) {
+            refreshTokens.revoke(previousRefreshToken);
+        }
         HttpHeaders headers = new HttpHeaders();
         headers.add(HttpHeaders.SET_COOKIE, accessCookie(user).toString());
         headers.add(
@@ -86,8 +90,15 @@ class Sessions implements BearerTokenResolver {
         if (refreshToken != null && !refreshToken.isBlank()) {
             refreshTokens.revoke(refreshToken);
         }
+        return cleared();
+    }
+
+    // Both cookies, emptied, so the browser stops sending them.
+    HttpHeaders cleared() {
         HttpHeaders headers = new HttpHeaders();
-        headers.add(HttpHeaders.SET_COOKIE, cookie("", Duration.ZERO).toString());
+        headers.add(
+                HttpHeaders.SET_COOKIE,
+                cookie(COOKIE, "", "/", "Lax", Duration.ZERO).toString());
         headers.add(HttpHeaders.SET_COOKIE, refreshCookie("", Duration.ZERO).toString());
         return headers;
     }
@@ -133,25 +144,19 @@ class Sessions implements BearerTokenResolver {
                 .build();
         JwsHeader header = JwsHeader.with(MacAlgorithm.HS256).build();
         String token = encoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();
-        return cookie(token, properties.accessTtl());
-    }
-
-    private ResponseCookie cookie(String value, Duration maxAge) {
-        return ResponseCookie.from(COOKIE, value)
-                .httpOnly(true)
-                .secure(properties.cookieSecure())
-                .sameSite("Lax")
-                .path("/")
-                .maxAge(maxAge)
-                .build();
+        return cookie(COOKIE, token, "/", "Lax", properties.accessTtl());
     }
 
     private ResponseCookie refreshCookie(String value, Duration maxAge) {
-        return ResponseCookie.from(REFRESH_COOKIE, value)
+        return cookie(REFRESH_COOKIE, value, REFRESH_PATH, "Strict", maxAge);
+    }
+
+    private ResponseCookie cookie(String name, String value, String path, String sameSite, Duration maxAge) {
+        return ResponseCookie.from(name, value)
                 .httpOnly(true)
                 .secure(properties.cookieSecure())
-                .sameSite("Strict")
-                .path(REFRESH_PATH)
+                .sameSite(sameSite)
+                .path(path)
                 .maxAge(maxAge)
                 .build();
     }

@@ -33,11 +33,10 @@ class RefreshTokens {
         this.properties = properties;
     }
 
-    // Starts a family for a new sign-in. Expired tokens of anyone are swept on the way.
+    // Starts a family for a new sign-in.
     @Transactional
     String issue(UUID userId) {
         Instant now = clock.instant();
-        tokens.deleteExpiredBefore(now);
         String token = newToken();
         tokens.save(RefreshToken.firstOf(userId, hash(token), now, properties.refreshTtl()));
         return token;
@@ -49,7 +48,9 @@ class RefreshTokens {
     Renewal renew(String token) {
         Instant now = clock.instant();
         RefreshToken found = tokens.findByTokenHash(hash(token)).orElse(null);
-        if (found == null || !found.isUnexpiredAt(now)) {
+        // A family is over once any of its tokens is revoked, even a successor saved while a sign-out
+        // or a reuse revoked the rest.
+        if (found == null || !found.isUnexpiredAt(now) || tokens.isFamilyRevoked(found.familyId())) {
             return new Renewal.Refused();
         }
         if (found.wasRotatedSince(now.minus(ROTATION_GRACE))) {
@@ -60,9 +61,12 @@ class RefreshTokens {
             tokens.revokeFamily(found.familyId(), now);
             return new Renewal.Refused();
         }
-        // Of two renewals racing with the same token, only one rotates it.
+        // Of two renewals racing with the same token, only one rotates it; a sign-out racing with this
+        // one wins too.
         if (tokens.markRotated(found.id(), now) == 0) {
-            return new Renewal.KeptBrowserToken(found.userId());
+            return tokens.isFamilyRevoked(found.familyId())
+                    ? new Renewal.Refused()
+                    : new Renewal.KeptBrowserToken(found.userId());
         }
         String next = newToken();
         tokens.save(found.next(hash(next), now, properties.refreshTtl()));

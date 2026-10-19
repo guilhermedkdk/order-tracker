@@ -42,6 +42,8 @@ type ApiRequest<T> = {
 const CSRF_COOKIE = 'XSRF-TOKEN'
 const CSRF_HEADER = 'X-XSRF-TOKEN'
 const UNREACHABLE = 'Não foi possível falar com o servidor. Tente de novo.'
+const STREAM_RETRY_FIRST_MS = 1000
+const STREAM_RETRY_MAX_MS = 30_000
 // Their 401 is about the credentials sent, not an access token that expired.
 const NO_RENEWAL = new Set(['/auth/login', '/auth/signup', '/auth/refresh', '/auth/logout'])
 
@@ -66,7 +68,8 @@ export async function api<T>(request: ApiRequest<T>): Promise<T> {
  * Listens to a server-sent event stream on this origin, with the session cookies like any call. The
  * browser reconnects by itself when the connection falls, and `onReconnect` runs once it is back,
  * since events may have been missed. When the API refuses the stream, as after the access token
- * expired, the session is renewed and the stream opens again once. Returns what stops it.
+ * expired or while it restarts, the session is renewed and the stream opens again, a little later
+ * each time. Returns what stops it.
  */
 export function listen({
   path,
@@ -78,8 +81,9 @@ export function listen({
   onReconnect: () => void
 }): () => void {
   let source: EventSource | null = null
+  let retry: ReturnType<typeof setTimeout> | undefined
   let opened = false
-  let renewed = false
+  let refusals = 0
 
   function connect() {
     const current = new EventSource(apiUrl(path))
@@ -89,20 +93,21 @@ export function listen({
         onReconnect()
       }
       opened = true
-      renewed = false
+      refusals = 0
     })
     for (const [type, handler] of Object.entries(events)) {
       current.addEventListener(type, handler)
     }
     current.addEventListener('error', () => {
-      // A refusal after a fresh renewal is not about the session; trying again would only loop.
-      if (current.readyState !== EventSource.CLOSED || source !== current || renewed) {
+      // The browser retries a dropped connection by itself, but never a refused one.
+      if (current.readyState !== EventSource.CLOSED || source !== current) {
         return
       }
-      renewed = true
-      void renewSession().then((ok) => {
-        if (ok && source === current) {
-          connect()
+      const wait = Math.min(STREAM_RETRY_MAX_MS, STREAM_RETRY_FIRST_MS * 2 ** refusals)
+      refusals += 1
+      void renewSession().then(() => {
+        if (source === current) {
+          retry = setTimeout(connect, wait)
         }
       })
     })
@@ -110,6 +115,7 @@ export function listen({
 
   connect()
   return () => {
+    clearTimeout(retry)
     source?.close()
     source = null
   }

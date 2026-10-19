@@ -3,6 +3,19 @@
 Log append-only, com a entrada mais nova no topo. Cada entrada registra o que uma sessão futura faria
 errado sem ela.
 
+### 2026-10-19 - Sessão revogada vale para a família inteira de tokens
+
+**Armadilha:** revogar só os tokens que já existem deixa escapar o sucessor gravado por uma renovação
+que corria junto com o "Sair" ou com a detecção de reuso, e a pessoa seguia logada depois de sair. E
+montar o validador do JWT à mão tirou as checagens padrão do Spring Security 7, como a do header `typ`.
+**Regra:** uma família com qualquer token revogado não renova mais, e a troca só acontece em token não
+revogado. Entrar de novo revoga a sessão que o navegador já tinha, e uma renovação recusada apaga os
+dois cookies. O validador parte de `JwtValidators.createDefaultWithValidators`. Tokens vencidos ficam
+no banco, porque restaurar a demonstração é a única exclusão do sistema. Uma resposta de renovação
+perdida depois do commit deixa o navegador com o token trocado e, depois de 30 s, pede login de novo:
+aceitar o token trocado fora da janela tiraria a detecção de cópia.
+**Onde:** `backend/.../auth/RefreshTokens.java`, `Sessions.java`, `SecurityConfig.java`.
+
 ### 2026-10-19 - JVM ajustada para acordar com um décimo de CPU
 
 **Armadilha:** a instância gratuita do Render tem 0,1 CPU, e a partida da API é quase toda CPU: JIT e
@@ -32,7 +45,9 @@ uma resposta 401 fecha o stream de vez.
 **Regra:** o emissor vive 100 s, o navegador reconecta e cada reconexão recarrega os pedidos. A
 segurança libera o despacho `ASYNC`. O escopo vale do momento da conexão até a próxima, então um
 restaurante novo passa a chegar em até 100 s. O `EventSource` fica em `lib/http.ts`, que, quando o
-stream é recusado, renova a sessão e abre de novo, uma vez.
+stream é recusado, renova a sessão e abre de novo, esperando de 1 s a 30 s, cada vez mais: um 502 de
+API reiniciando não pode encerrar o tempo real. Eventos em rajada recarregam a tela uma vez, 300 ms
+depois do último.
 **Onde:** `backend/.../live/OrderStream.java`, `backend/.../auth/SecurityConfig.java`,
 `frontend/src/lib/http.ts`.
 

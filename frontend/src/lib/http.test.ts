@@ -104,24 +104,31 @@ describe('api', () => {
     await expect(failure).rejects.toMatchObject({ status: 401 })
   })
 
-  it('renews the session when the API refuses a stream, and opens the stream again', async () => {
-    document.cookie = 'XSRF-TOKEN=token-123'
+  it('renews the session when the API refuses a stream, and keeps opening it again', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
     let renewals = 0
     server.use(
       http.post('/api/auth/refresh', () => {
         renewals += 1
-        return new HttpResponse(null, { status: 204 })
+        // As while the API restarts: renewing fails too.
+        return new HttpResponse(null, { status: 502 })
       }),
     )
     const stop = listen({ path: '/things/stream', events: {}, onReconnect: () => {} })
-    const refused = openStream('/things/stream')
 
-    refused.refuse()
+    try {
+      openStream('/things/stream').refuse()
+      await vi.advanceTimersByTimeAsync(5000)
+      expect(openStreamCount()).toBe(1)
 
-    await vi.waitFor(() => expect(openStreamCount()).toBe(1))
-    expect(openStream('/things/stream')).not.toBe(refused)
-    expect(renewals).toBe(1)
-    stop()
+      openStream('/things/stream').refuse()
+      await vi.advanceTimersByTimeAsync(5000)
+      expect(openStreamCount()).toBe(1)
+      expect(renewals).toBe(2)
+    } finally {
+      stop()
+      vi.useRealTimers()
+    }
   })
 
   it('rejects an answer that does not match the expected shape', async () => {
