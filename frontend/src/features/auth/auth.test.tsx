@@ -81,7 +81,8 @@ describe('authentication', () => {
     )
     const { user } = renderAt('/')
 
-    await user.click(await screen.findByRole('button', { name: 'Sair' }))
+    await user.click(await screen.findByRole('button', { name: 'Ana Souza' }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Sair' }))
 
     expect(await screen.findByRole('heading', { name: 'Entrar' })).toBeInTheDocument()
   })

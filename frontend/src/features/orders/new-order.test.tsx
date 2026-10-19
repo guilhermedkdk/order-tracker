@@ -12,6 +12,7 @@ import {
   signedInAs,
 } from '@/test/fixtures'
 import { renderAt } from '@/test/render'
+import { choose } from '@/test/select'
 import { server } from '@/test/server'
 
 const restaurants = http.get('/api/restaurants', () => HttpResponse.json([pizzaria]))
@@ -119,7 +120,7 @@ describe('new order', () => {
 
     await fillRequiredFields(user)
     await user.selectOptions(screen.getByLabelText('Forma de pagamento'), 'Pix')
-    await user.selectOptions(screen.getByLabelText('Restaurante'), 'Burger da Vila')
+    await choose({ user, label: 'Restaurante', option: 'Burger da Vila' })
     await user.click(screen.getByRole('button', { name: 'Registrar pedido' }))
 
     await screen.findByText('Nenhum pedido ainda. Os novos aparecem aqui.')
