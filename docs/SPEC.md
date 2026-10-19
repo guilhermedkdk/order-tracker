@@ -105,10 +105,10 @@ Todo pedido na API traz `id` (UUID), `code`, os totais e `allowedNextStatuses`. 
 - `/restaurantes/novo`: criação de restaurante, que também é a primeira tela de um dono novo.
 - Cabeçalho: seletor de restaurante, com a opção "Todos" para o admin, e o menu do usuário com o nome,
   sair, "Novo restaurante" para o dono e "Restaurar demonstração" com confirmação para o admin.
-- `/pedidos`: abre no kanban, com uma coluna por status, os pedidos mais recentes de cada uma e o total
-  da coluna. Um pedido muda de coluna arrastando o card ou pelo botão da próxima ação, e só as colunas
-  dos próximos status aceitam o card. A alternância leva à lista, com código, cliente, bairro, total,
-  horário e status, filtro por status e paginação. A visão fica na URL (`?visao=lista`). Nas duas, a
+- `/pedidos`: abre na lista, com código, cliente, bairro, total, horário e status, filtro por status e
+  paginação. A alternância leva ao kanban, com uma coluna por status, os pedidos mais recentes de cada
+  uma e o total da coluna; um pedido muda de coluna arrastando o card ou pelo botão da próxima ação, e
+  só as colunas dos próximos status aceitam o card. A visão fica na URL (`?visao=kanban`). Nas duas, a
   próxima ação fica à vista e cancelar fica no menu do pedido, com um diálogo para o motivo.
 - `/pedidos/novo`: o formulário do pedido no restaurante selecionado, com itens que se adicionam e
   removem e a prévia do total. Na visão "Todos", o restaurante é o primeiro campo do formulário. Na fase 2, o telefone preenche nome e endereço,
@@ -168,7 +168,7 @@ Cada fase é uma branch com um PR para `main`, revisado com `/code-review` antes
 6. GitHub Actions com build e testes.
 7. Repaginação visual: logo, cabeçalho com menu do usuário, lista com uma linha por pedido e
    formulários com os componentes do shadcn/ui.
-8. Kanban como visão padrão dos pedidos, com arrastar entre colunas, adiantado da fase 3.
+8. Kanban como segunda visão dos pedidos, com arrastar entre colunas, adiantado da fase 3.
 9. Deploy: Render, Vercel e Neon, com o link no README.
 
 **Fase 3, `feat/phase-3`: extras**

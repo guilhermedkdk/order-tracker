@@ -33,8 +33,9 @@ async function fillRequiredFields(user: ReturnType<typeof renderAt>['user']) {
   await user.type(screen.getByLabelText('Taxa de entrega'), '7,00')
 }
 
-describe('new order', () => {
-  it('registers an order, previewing the total, and goes back to the board', async () => {
+// Filling the whole form key by key, as a person does, takes seconds in jsdom.
+describe('new order', { timeout: 15_000 }, () => {
+  it('registers an order, previewing the total, and goes back to the list', async () => {
     const orders: ReturnType<typeof orderSummary>[] = []
     let sent: unknown = null
     server.use(
@@ -56,7 +57,7 @@ describe('new order', () => {
     expect(screen.getByText('R$ 98,80')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Registrar pedido' }))
 
-    expect(await screen.findByRole('article', { name: 'Pedido #00C0DE11' })).toBeInTheDocument()
+    expect(await screen.findByRole('row', { name: /00C0DE11/ })).toBeInTheDocument()
     expect(sent).toEqual({
       restaurantId: pizzaria.id,
       customer: { name: 'Maria Silva', phone: '11987654321' },
@@ -123,7 +124,7 @@ describe('new order', () => {
     await choose({ user, label: 'Restaurante selecionado', option: 'Burger da Vila' })
     await user.click(screen.getByRole('button', { name: 'Registrar pedido' }))
 
-    await screen.findByRole('region', { name: 'Recebido' })
+    await screen.findByText('Nenhum pedido ainda.')
     expect(sent).toMatchObject({ restaurantId: burger.id })
   })
 
