@@ -1,51 +1,41 @@
-import { Link, Outlet, useNavigate } from 'react-router'
-import { Button } from '@/components/ui/button'
+import { Link, Outlet, useSearchParams } from 'react-router'
+import { Logo } from '@/components/Logo'
 import { Badge } from '@/components/ui/badge'
-import { useLogout, useMe } from '@/features/auth/api'
-import { RestoreDemoButton } from '@/features/demo/RestoreDemoButton'
+import { Toaster } from '@/components/ui/sonner'
+import { useMe } from '@/features/auth/api'
 import { RestaurantSelector } from '@/features/restaurants/RestaurantSelector'
+import { UserMenu } from './UserMenu'
 
 /** The frame around every signed-in screen: product name, restaurant picker, who is signed in. */
 export function AppShell() {
   const me = useMe()
-  const logout = useLogout()
-  const navigate = useNavigate()
-  const isOwner = me.data?.role === 'DONO'
-  const isAdmin = me.data?.role === 'ADMIN'
-
-  async function signOut() {
-    await logout.mutateAsync()
-    navigate('/entrar', { replace: true })
-  }
+  const [params] = useSearchParams()
+  const restaurant = params.get('restaurante')
+  const home = restaurant ? `/pedidos?restaurante=${encodeURIComponent(restaurant)}` : '/pedidos'
 
   return (
     <div className="min-h-svh">
-      <header className="border-b">
-        <div className="mx-auto flex min-h-14 max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-2">
-          <div className="flex flex-wrap items-center gap-3">
-            <Link to="/" className="font-heading font-semibold">
-              Rastreador de pedidos
-            </Link>
-            <RestaurantSelector />
-            {isOwner && (
-              <Button asChild variant="ghost" size="sm">
-                <Link to="/restaurantes/novo">Novo restaurante</Link>
-              </Button>
+      <header className="sticky top-0 z-40 border-b bg-background/90 backdrop-blur-sm">
+        <div className="mx-auto flex h-16 max-w-7xl items-center gap-3 px-4 sm:gap-5 sm:px-6">
+          <Link to={home} aria-label="Rastreador de pedidos" className="shrink-0 rounded-lg">
+            <Logo nameClassName="hidden md:inline" />
+          </Link>
+          <span aria-hidden="true" className="hidden h-6 w-px bg-border md:block" />
+          <RestaurantSelector />
+          <div className="ml-auto flex shrink-0 items-center gap-2">
+            {me.data?.demo && (
+              <Badge variant="outline" className="hidden sm:inline-flex">
+                Conta demo
+              </Badge>
             )}
-          </div>
-          <div className="flex items-center gap-3 text-sm">
-            {isAdmin && <RestoreDemoButton />}
-            {me.data?.demo && <Badge variant="outline">Conta demo</Badge>}
-            <span className="text-muted-foreground">{me.data?.name}</span>
-            <Button variant="outline" size="sm" onClick={signOut} disabled={logout.isPending}>
-              Sair
-            </Button>
+            {me.data && <UserMenu user={me.data} />}
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-5xl p-4">
+      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
         <Outlet />
       </main>
+      <Toaster position="bottom-right" />
     </div>
   )
 }
