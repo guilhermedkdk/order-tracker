@@ -35,7 +35,7 @@ async function fillRequiredFields(user: ReturnType<typeof renderAt>['user']) {
 
 // Filling the whole form key by key, as a person does, takes seconds in jsdom.
 describe('new order', { timeout: 15_000 }, () => {
-  it('registers an order, previewing the total, and goes back to the list', async () => {
+  it('registers an order, previewing the total, and goes back to the list where it shows', async () => {
     const orders: ReturnType<typeof orderSummary>[] = []
     let sent: unknown = null
     server.use(
@@ -49,7 +49,10 @@ describe('new order', { timeout: 15_000 }, () => {
         return HttpResponse.json(orderDetails(created), { status: 201 })
       }),
     )
-    const { user } = renderAt(`/pedidos/novo?restaurante=${pizzaria.id}`)
+    // Opened from the list filtered by another status, on a later page.
+    const { user, router } = renderAt(
+      `/pedidos/novo?restaurante=${pizzaria.id}&status=ENTREGUE&pagina=3`,
+    )
 
     await fillRequiredFields(user)
     await choose({ user, label: 'Forma de pagamento', option: 'Pix' })
@@ -58,6 +61,7 @@ describe('new order', { timeout: 15_000 }, () => {
     await user.click(screen.getByRole('button', { name: 'Registrar pedido' }))
 
     expect(await screen.findByRole('row', { name: /00C0DE11/ })).toBeInTheDocument()
+    expect(router.state.location.search).toBe(`?restaurante=${pizzaria.id}`)
     expect(sent).toEqual({
       restaurantId: pizzaria.id,
       customer: { name: 'Maria Silva', phone: '11987654321' },
@@ -75,6 +79,38 @@ describe('new order', { timeout: 15_000 }, () => {
       payment: { method: 'PIX' },
       notes: '',
     })
+  })
+
+  it('knows the customer of a just registered order in the next one', async () => {
+    let known: unknown = null
+    server.use(
+      signedInAs(ana),
+      restaurants,
+      http.get('/api/orders', () => HttpResponse.json(page([]))),
+      http.get('/api/customers', () =>
+        known
+          ? HttpResponse.json(known)
+          : HttpResponse.json({ detail: 'Cliente não encontrado.' }, { status: 404 }),
+      ),
+      http.post('/api/orders', async ({ request }) => {
+        const body = (await request.json()) as {
+          customer: { name: string; phone: string }
+          deliveryAddress: unknown
+        }
+        known = { ...body.customer, lastAddress: body.deliveryAddress }
+        return HttpResponse.json(orderDetails(orderSummary()), { status: 201 })
+      }),
+    )
+    const { user } = renderAt(`/pedidos/novo?restaurante=${pizzaria.id}`)
+
+    await fillRequiredFields(user)
+    await choose({ user, label: 'Forma de pagamento', option: 'Pix' })
+    await user.click(screen.getByRole('button', { name: 'Registrar pedido' }))
+    await user.click(await screen.findByRole('link', { name: 'Novo pedido' }))
+    await user.type(await screen.findByLabelText('Telefone'), '(11) 98765-4321')
+
+    expect(await screen.findByDisplayValue('Maria Silva')).toBeInTheDocument()
+    expect(screen.getByLabelText('Rua')).toHaveValue('Av. Paulista')
   })
 
   it('shows the API message next to the nested field it is about', async () => {

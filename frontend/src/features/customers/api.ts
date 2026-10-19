@@ -18,9 +18,12 @@ const customerSchema = z.object({
 
 export type KnownCustomer = z.infer<typeof customerSchema>
 
+/** Every customer lookup in the cache. A new order changes what they answer. */
+export const customersKey = ['customers'] as const
+
 /**
- * The restaurant's customer with this phone, `null` when there is none. Waits until the phone has
- * the 10 or 11 digits of a full number.
+ * The restaurant's customer with this phone, `null` when there is none. Waits for a full number: 11
+ * digits for a mobile, which starts with 9 after the area code, and 10 for a landline.
  */
 export function useCustomerLookup({
   restaurantId,
@@ -31,7 +34,7 @@ export function useCustomerLookup({
 }) {
   const digits = phone.replace(/\D/g, '')
   return useQuery({
-    queryKey: ['customers', restaurantId, digits],
+    queryKey: [...customersKey, restaurantId, digits],
     queryFn: async (): Promise<KnownCustomer | null> => {
       const search = new URLSearchParams({ restaurantId, phone: digits })
       try {
@@ -43,7 +46,7 @@ export function useCustomerLookup({
         throw error
       }
     },
-    enabled: restaurantId !== '' && /^\d{10,11}$/.test(digits),
+    enabled: restaurantId !== '' && /^(\d{2}9\d{8}|\d{2}[2-8]\d{7})$/.test(digits),
     staleTime: 60_000,
   })
 }

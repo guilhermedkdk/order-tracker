@@ -13,7 +13,8 @@ interface CustomerRepository extends JpaRepository<Customer, UUID> {
 
     // One atomic statement, so two first orders from the same phone at once cannot both insert. An
     // older order arriving later does not overwrite a newer one.
-    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    // No clearAutomatically: clearing would detach the order the same transaction just saved.
+    @Modifying(flushAutomatically = true)
     @Query(nativeQuery = true, value = """
             insert into customers (id, restaurant_id, phone, name, address_cep, address_street,
                 address_number, address_complement, address_neighborhood, address_city, address_state,

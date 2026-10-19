@@ -19,7 +19,7 @@ function ordersApi(requests: Requested[]) {
       restaurantId: params.get('restaurantId'),
     })
     return HttpResponse.json({
-      content: [orderSummary({ code: `PAGINA${page + 1}0` })],
+      content: page < 3 ? [orderSummary({ code: `PAGINA${page + 1}0` })] : [],
       page,
       size: 20,
       totalElements: 45,
@@ -63,6 +63,16 @@ describe('order list filters', () => {
     expect(await screen.findByText('Página 3 de 3 · 45 pedidos')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Próxima' })).toBeDisabled()
     expect(requests.at(-1)?.page).toBe('2')
+  })
+
+  it('shows the last page when the one asked for is past it', async () => {
+    const requests: Requested[] = []
+    setup(requests)
+    const { router } = renderAt(`/pedidos?restaurante=${pizzaria.id}&pagina=9`)
+
+    expect(await screen.findByText('Página 3 de 3 · 45 pedidos')).toBeInTheDocument()
+    expect(screen.getByRole('row', { name: /PAGINA30/ })).toBeInTheDocument()
+    expect(router.state.location.search).toContain('pagina=3')
   })
 
   it('goes back to the first page when the status or the restaurant changes', async () => {

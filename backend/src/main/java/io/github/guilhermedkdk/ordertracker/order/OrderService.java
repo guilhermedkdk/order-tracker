@@ -39,9 +39,18 @@ public class OrderService {
     @Transactional
     public OrderView create(CurrentUser user, NewOrder data) {
         restaurants.requireVisible(restaurants.scopeOf(user), data.restaurantId());
-        Order order = orders.save(Order.create(data, authorOf(user), clock.instant()));
-        rememberCustomer(order);
-        return view(order);
+        return view(save(Order.create(data, authorOf(user), clock.instant())));
+    }
+
+    /**
+     * Saves a new order and feeds the restaurant's customer base, which only fills the next order of
+     * the same phone. The demo calls it for orders built with past timestamps; it checks no visibility.
+     */
+    @Transactional
+    public Order save(Order order) {
+        Order saved = orders.save(order);
+        rememberCustomer(saved);
+        return saved;
     }
 
     @Transactional(readOnly = true)
@@ -97,8 +106,7 @@ public class OrderService {
                 order, restaurants.namesOf(List.of(order.restaurantId())).get(order.restaurantId()));
     }
 
-    /** Feeds the restaurant's customer base, which only fills the next order of the same phone. */
-    public void rememberCustomer(Order order) {
+    private void rememberCustomer(Order order) {
         DeliveryAddress address = order.deliveryAddress();
         customers.remember(
                 order.restaurantId(),

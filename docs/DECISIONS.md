@@ -3,6 +3,25 @@
 Log append-only, com a entrada mais nova no topo. Cada entrada registra o que uma sessão futura faria
 errado sem ela.
 
+### 2026-10-19 - Telefone e CEP preenchem pelo mesmo registro
+
+**Armadilha:** cada preenchimento olhando só para campos vazios, ou só para o que ele mesmo pôs,
+deixava no formulário o nome e o endereço do cliente anterior quando o telefone era corrigido, e o
+endereço da base de clientes quando a pessoa digitava um CEP novo.
+**Regra:** `useAutofill` guarda o que foi preenchido sozinho, e um campo vira da pessoa assim que ela o
+muda. O endereço do cliente só entra enquanto o CEP não foi digitado. A resposta do ViaCEP troca rua,
+bairro, cidade e UF preenchidos antes e limpa número e complemento que vieram de outro endereço. Isso
+substitui a regra do CEP de 2026-10-17 abaixo.
+**Onde:** `frontend/src/features/orders/autofill.ts`, `useCustomerAutofill.ts`, `useCepAutofill.ts`.
+
+### 2026-10-19 - Evento de menu ou diálogo chega ao card do kanban
+
+**Armadilha:** um portal do React renderiza o menu e o diálogo fora do card, mas os eventos sobem pela
+árvore do React até o `<li>` arrastável. O dnd-kit não confere de onde veio o clique, então selecionar
+texto no diálogo de cancelamento arrastava o card de trás.
+**Regra:** os listeners do card passam por `fromCardOnly`, que ignora eventos de fora do DOM do card.
+**Onde:** `frontend/src/features/orders/OrderBoard.tsx`.
+
 ### 2026-10-19 - Diálogo aberto por menu mora fora do menu
 
 **Armadilha:** o caminho comum é pôr o `Dialog` dentro do item do `DropdownMenu`. O menu fecha ao
