@@ -1,7 +1,11 @@
 import '@testing-library/jest-dom/vitest'
-import { cleanup } from '@testing-library/react'
+import { cleanup, configure } from '@testing-library/react'
 import { afterAll, afterEach, beforeAll } from 'vitest'
 import { server } from './server'
+
+// With every file running at once, a first render that waits on several queries, like the board's
+// five, can pass the default 1 s that findBy waits.
+configure({ asyncUtilTimeout: 3000 })
 
 // Radix selects and menus measure and capture the pointer with browser APIs jsdom lacks.
 globalThis.ResizeObserver = class {
