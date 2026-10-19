@@ -3,6 +3,46 @@
 Log append-only, com a entrada mais nova no topo. Cada entrada registra o que uma sessão futura faria
 errado sem ela.
 
+### 2026-10-19 - Diálogo aberto por menu mora fora do menu
+
+**Armadilha:** o caminho comum é pôr o `Dialog` dentro do item do `DropdownMenu`. O menu fecha ao
+escolher o item, desmonta o conteúdo e leva o diálogo junto.
+**Regra:** o diálogo fica ao lado do menu, com o estado de aberto no componente pai, e recebe
+`returnFocus` para devolver o foco a quem o abriu. Vale para cancelar pedido e restaurar demonstração.
+**Onde:** `frontend/src/features/orders/StatusActions.tsx`, `frontend/src/app/UserMenu.tsx`.
+
+### 2026-10-19 - Arrastar no kanban: toda coluna é alvo, e quem decide é o soltar
+
+**Armadilha:** desligar (`disabled`) as colunas que não aceitam o card parece o jeito certo, mas o
+dnd-kit mede os alvos no começo do arrasto e uma coluna ligada no meio dele pode ficar sem medida.
+O `<a>` do card também é arrastável pelo próprio navegador e rouba o gesto do dnd-kit.
+**Regra:** todas as colunas ficam ligadas; `resolveDrop` decide no soltar (ignora, move ou pede o
+motivo) e o destaque visual só mostra as colunas permitidas. O link do card tem `draggable={false}`.
+Não há sensor de teclado: pelo teclado, o caminho são os botões do card.
+**Onde:** `frontend/src/features/orders/OrderBoard.tsx`, `frontend/src/features/orders/board.ts`.
+
+### 2026-10-19 - Kanban com uma consulta por status
+
+**Armadilha:** o reflexo é carregar todos os pedidos numa consulta só e agrupar no front, ou criar
+um endpoint de quadro. A primeira traz só 100 pedidos misturados e erra o total de cada coluna; a
+segunda muda a API por causa de uma tela.
+**Regra:** cada coluna é a primeira página de `GET /api/orders?status=`, com o `totalElements` como
+total e "Ver todos" para a lista filtrada. O card arrastado vai para a coluna nova antes da resposta
+(`pending`), e como as colunas recarregam em tempos diferentes, `arrangeBoard` mostra cada pedido uma
+vez só e acerta os totais.
+**Onde:** `frontend/src/features/orders/api.ts` (`useOrderBoard`), `frontend/src/features/orders/board.ts`.
+
+### 2026-10-19 - Regras globais do CSS que parecem sobrando
+
+**Armadilha:** `scrollbar-gutter: stable` evita que a página ande para o lado quando a barra de
+rolagem aparece ou some (trocar de filtro mudava a altura). Mas o Radix, ao abrir menu, select ou
+diálogo, trava a rolagem e soma uma margem do tamanho da barra, e com o espaço já reservado a página
+andava do mesmo jeito. Além disso, o Tailwind 4 deixa botão com cursor de seta. CSS não aceita
+comentário com `//`, então o porquê fica aqui.
+**Regra:** não tire do `index.css` o `scrollbar-gutter`, a margem zerada em `body[data-scroll-locked]`
+nem o `cursor: pointer` dos elementos clicáveis.
+**Onde:** `frontend/src/index.css`.
+
 ### 2026-10-17 - Proxy na frente da API repassa o host original
 
 **Armadilha:** atrás do nginx (e, em produção, do rewrite da Vercel), a API enxerga o próprio endereço

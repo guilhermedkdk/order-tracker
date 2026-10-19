@@ -97,7 +97,8 @@ de todos em `src/lib/` e `src/components/ui/` (componentes do shadcn/ui).
 | ----- | ------------- |
 | `app/` | Rotas, providers (TanStack Query), o layout com o seletor de restaurante e o guarda de rota autenticada. |
 | `lib/http.ts` | O único módulo que chama `fetch` na API. Fala com `/api` na própria origem, manda o header CSRF nas requisições que alteram dados e transforma Problem Details em `ApiError` com os erros por campo. |
-| `lib/format.ts` | Dinheiro em reais, datas no fuso de São Paulo, código do pedido, máscaras de telefone e CEP. |
+| `lib/format.ts` | Dinheiro em reais, datas no fuso de São Paulo, tempo desde o recebimento, código do pedido, máscaras de telefone e CEP. |
+| `components/` | O que várias telas usam além do shadcn/ui: a logo, o `ControlledSelect` (o Select ligado a um campo do react-hook-form) e a tela de carregamento. |
 | `features/auth/` | Login, cadastro, botões de conta demo, `useMe` e logout. |
 | `features/restaurants/` | Seletor de restaurante, criação do primeiro restaurante e o restaurante selecionado, que vive na URL (`?restaurante=`). |
 | `features/orders/` | Lista com filtro e paginação, detalhe com linha do tempo, formulário de novo pedido, kanban com arrastar entre colunas, ações de status e os rótulos em português dos enums. |
