@@ -1,6 +1,7 @@
-import { screen, within } from '@testing-library/react'
+import { act, screen, within } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
+import { openStream, openStreamCount } from '@/test/event-source'
 import {
   admin,
   ana,
@@ -14,6 +15,7 @@ import {
 import { renderAt } from '@/test/render'
 import { choose } from '@/test/select'
 import { server } from '@/test/server'
+import { setTabHidden } from '@/test/tab'
 
 const restaurants = http.get('/api/restaurants', () => HttpResponse.json([burger, pizzaria]))
 
@@ -92,6 +94,66 @@ describe('order list', () => {
     expect(screen.queryByRole('row', { name: /00C0DE11/ })).not.toBeInTheDocument()
     answerBurger()
     expect(await screen.findByText('Nenhum pedido ainda.')).toBeInTheDocument()
+  })
+
+  it('shows a status change made elsewhere as soon as the API streams it', async () => {
+    let order = orderSummary()
+    server.use(
+      signedInAs(ana),
+      restaurants,
+      http.get('/api/orders', () => HttpResponse.json(page([order]))),
+    )
+    renderAt(`/pedidos?restaurante=${pizzaria.id}`)
+    const row = await screen.findByRole('row', { name: /00C0DE11/ })
+
+    order = orderSummary({ status: 'EM_PREPARO', allowedNextStatuses: ['SAIU_PARA_ENTREGA'] })
+    act(() =>
+      openStream('/orders/stream').emit('status', {
+        orderId: order.id,
+        restaurantId: pizzaria.id,
+        status: 'EM_PREPARO',
+      }),
+    )
+
+    expect(await within(row).findByText('Em preparo')).toBeInTheDocument()
+  })
+
+  it('closes the stream while the tab is hidden and catches up when it is back', async () => {
+    let order = orderSummary()
+    server.use(
+      signedInAs(ana),
+      restaurants,
+      http.get('/api/orders', () => HttpResponse.json(page([order]))),
+    )
+    renderAt(`/pedidos?restaurante=${pizzaria.id}`)
+    const row = await screen.findByRole('row', { name: /00C0DE11/ })
+
+    act(() => setTabHidden(true))
+    expect(openStreamCount()).toBe(0)
+    order = orderSummary({ status: 'EM_PREPARO', allowedNextStatuses: ['SAIU_PARA_ENTREGA'] })
+    act(() => setTabHidden(false))
+
+    expect(await within(row).findByText('Em preparo')).toBeInTheDocument()
+    expect(openStreamCount()).toBe(1)
+  })
+
+  it('catches up after the stream drops and reconnects', async () => {
+    let order = orderSummary()
+    server.use(
+      signedInAs(ana),
+      restaurants,
+      http.get('/api/orders', () => HttpResponse.json(page([order]))),
+    )
+    renderAt(`/pedidos?restaurante=${pizzaria.id}`)
+    const row = await screen.findByRole('row', { name: /00C0DE11/ })
+    const stream = openStream('/orders/stream')
+    act(() => stream.open())
+
+    act(() => stream.drop())
+    order = orderSummary({ status: 'EM_PREPARO', allowedNextStatuses: ['SAIU_PARA_ENTREGA'] })
+    act(() => stream.open())
+
+    expect(await within(row).findByText('Em preparo')).toBeInTheDocument()
   })
 
   it('moves an order forward with the action the API allows', async () => {

@@ -1,7 +1,11 @@
 import '@testing-library/jest-dom/vitest'
 import { cleanup, configure } from '@testing-library/react'
 import { afterAll, afterEach, beforeAll } from 'vitest'
+import { closeAllStreams, FakeEventSource } from './event-source'
 import { server } from './server'
+import { resetTab } from './tab'
+
+Object.defineProperty(globalThis, 'EventSource', { configurable: true, value: FakeEventSource })
 
 // With every file running at once, a first render that waits on several queries, like the board's
 // five, can pass the default 1 s that findBy waits.
@@ -23,6 +27,8 @@ beforeAll(() => server.listen({ onUnhandledFrame: 'error' }))
 
 afterEach(() => {
   cleanup()
+  closeAllStreams()
+  resetTab()
   server.resetHandlers()
   for (const cookie of document.cookie.split('; ')) {
     const name = cookie.split('=')[0]

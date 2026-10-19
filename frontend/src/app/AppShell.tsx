@@ -3,12 +3,17 @@ import { Logo } from '@/components/Logo'
 import { Badge } from '@/components/ui/badge'
 import { Toaster } from '@/components/ui/sonner'
 import { useMe } from '@/features/auth/api'
+import { useOrderUpdates } from '@/features/orders/api'
 import { RestaurantSelector } from '@/features/restaurants/RestaurantSelector'
 import { UserMenu } from './UserMenu'
 
-/** The frame around every signed-in screen: product name, restaurant picker, who is signed in. */
+/**
+ * The frame around every signed-in screen: product name, restaurant picker, who is signed in. It also
+ * keeps the orders current while any of those screens is open.
+ */
 export function AppShell() {
   const me = useMe()
+  useOrderUpdates()
   const [params] = useSearchParams()
   const restaurant = params.get('restaurante')
   const home = restaurant ? `/pedidos?restaurante=${encodeURIComponent(restaurant)}` : '/pedidos'

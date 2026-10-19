@@ -1,8 +1,9 @@
 import { http, HttpResponse } from 'msw'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
+import { openStream, openStreamCount } from '@/test/event-source'
 import { server } from '@/test/server'
-import { api, ApiError } from './http'
+import { api, ApiError, listen } from './http'
 
 describe('api', () => {
   it('echoes the CSRF cookie in the header of every write', async () => {
@@ -81,6 +82,26 @@ describe('api', () => {
     const failure = api({ path: '/things', schema: z.undefined() })
 
     await expect(failure).rejects.toMatchObject({ status: 401 })
+  })
+
+  it('renews the session when the API refuses a stream, and opens the stream again', async () => {
+    document.cookie = 'XSRF-TOKEN=token-123'
+    let renewals = 0
+    server.use(
+      http.post('/api/auth/refresh', () => {
+        renewals += 1
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+    const stop = listen({ path: '/things/stream', events: {}, onReconnect: () => {} })
+    const refused = openStream('/things/stream')
+
+    refused.refuse()
+
+    await vi.waitFor(() => expect(openStreamCount()).toBe(1))
+    expect(openStream('/things/stream')).not.toBe(refused)
+    expect(renewals).toBe(1)
+    stop()
   })
 
   it('rejects an answer that does not match the expected shape', async () => {

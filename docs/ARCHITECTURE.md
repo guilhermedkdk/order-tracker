@@ -34,7 +34,7 @@ ao resto.
 | `order` | `Order` (`create`, `changeStatus`, `allowedNextStatuses`), `OrderService`; endpoints `/api/orders` | A máquina de status, o cálculo de subtotal e total, as regras de troco e de cancelamento, o histórico de status, filtros e paginação, e a forma do pedido na API (código, próximos status). |
 | `customer` | `CustomerBook.remember`, chamado por `OrderService` a cada pedido gravado; endpoint `/api/customers` | A busca por restaurante e telefone, e o upsert atômico do nome e do último endereço. |
 | `demo` | `POST /api/demo/restore`, só para o admin | As contas demo, o roteiro de restaurantes e pedidos com horários no passado, a carga na primeira subida e a restauração. |
-| `live` (fase 3) | `GET /api/orders/stream` | As conexões SSE, o sinal de vida, a entrega só para quem enxerga o pedido. |
+| `live` | `GET /api/orders/stream` | As conexões SSE, cada uma com o escopo de quem conectou, o sinal de vida e a entrega só para quem enxerga o pedido. |
 | `shared` | `ApiExceptionHandler`, as exceções de domínio comuns, o `Clock` | O formato Problem Details e a lista de erros por campo. |
 
 Dependências: `restaurant` usa `auth`; `customer` usa `restaurant`; `order` usa `restaurant` e `customer`;
@@ -62,7 +62,7 @@ cascata e `@Embeddable`). Nenhum outro código altera essas partes diretamente.
 3. `OrderService` pede o `RestaurantScope` do usuário e carrega o pedido só se ele for visível. Se não
    for, responde 404.
 4. `order.changeStatus(...)` aplica a regra. Uma transição inválida vira 409.
-5. A resposta é o pedido atualizado, com os próximos status. Na fase 3, depois do commit, um evento
+5. A resposta é o pedido atualizado, com os próximos status. Depois do commit, o evento
    `OrderStatusChanged` chega ao `live`, que avisa as conexões abertas que enxergam aquele restaurante.
 
 ### Fluxo de "criar pedido"
@@ -121,7 +121,7 @@ O ViaCEP (fase 2) é a única chamada externa, feita direto do navegador por `li
   instante como parâmetro e não precisa dele.
 - **Rede no front.** Nos testes, o MSW (Mock Service Worker) intercepta as chamadas a `/api` e ao ViaCEP.
   O código de produção não tem porta nem adaptador para isso.
-- **Eventos de pedido** (fase 3), entre `order` e `live`, pelos eventos de aplicação do Spring, disparados
+- **Eventos de pedido** (`OrderStatusChanged`), entre `order` e `live`, pelos eventos de aplicação do Spring, disparados
   depois do commit. Um pedido que não foi gravado nunca chega a uma tela.
 
 ## Testes

@@ -3,6 +3,19 @@
 Log append-only, com a entrada mais nova no topo. Cada entrada registra o que uma sessão futura faria
 errado sem ela.
 
+### 2026-10-19 - Stream de pedidos que reconecta a cada 100 segundos
+
+**Armadilha:** a Vercel corta qualquer requisição repassada aos 120 s, e um `SseEmitter` sem prazo
+próprio usa o do servidor, de 30 s no Tomcat. O despacho assíncrono que encerra o stream passa de novo
+pela segurança, quando o token de acesso pode já ter vencido. E o `EventSource` não renova sessão:
+uma resposta 401 fecha o stream de vez.
+**Regra:** o emissor vive 100 s, o navegador reconecta e cada reconexão recarrega os pedidos. A
+segurança libera o despacho `ASYNC`. O escopo vale do momento da conexão até a próxima, então um
+restaurante novo passa a chegar em até 100 s. O `EventSource` fica em `lib/http.ts`, que, quando o
+stream é recusado, renova a sessão e abre de novo, uma vez.
+**Onde:** `backend/.../live/OrderStream.java`, `backend/.../auth/SecurityConfig.java`,
+`frontend/src/lib/http.ts`.
+
 ### 2026-10-19 - Refresh token com rotação e 30 segundos de tolerância
 
 **Armadilha:** com rotação estrita, duas abas que renovam juntas derrubam a sessão: o cookie é um só,

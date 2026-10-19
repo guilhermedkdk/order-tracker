@@ -100,7 +100,7 @@ Cada linha só é marcada quando o teste que a prova existe e passa.
 | `PATCH /api/orders/{id}/status` | `{ status, cancellationReason?, cancellationDetail? }`. 200 com o pedido. |
 | `GET /api/customers?restaurantId=&phone=` | O cliente daquele restaurante com esse telefone, ou 404 (fase 2). |
 | `POST /api/demo/restore` | Só admin. Restaura a demonstração. 204. |
-| `GET /api/orders/stream` | SSE com as mudanças de status visíveis (fase 3). |
+| `GET /api/orders/stream` | SSE com as mudanças de status visíveis. |
 
 Todo pedido na API traz `id` (UUID), `code`, os totais e `allowedNextStatuses`. A documentação fica em
 `/swagger-ui.html`, aberta sem login.
@@ -136,13 +136,16 @@ Todo pedido na API traz `id` (UUID), `code`, os totais e `allowedNextStatuses`. 
   restaurantes delas, com pedidos e clientes, e recria tudo com horários relativos ao momento da
   restauração. Pedidos que o admin demo criou em restaurantes de contas reais ficam.
 
-## Tempo real (fase 3)
+## Tempo real
 
 - O navegador abre `GET /api/orders/stream` com `EventSource`, que manda o cookie de sessão sozinho.
-- A API envia um evento por mudança de status (id do pedido, restaurante, novo status) só para conexões
-  que enxergam aquele restaurante, mais um comentário de sinal de vida a cada 30 segundos.
-- O front fecha a conexão quando a aba vai para segundo plano. Ao voltar, ou ao reconectar, recarrega a
-  lista, então nenhum evento perdido deixa a tela errada.
+- A API envia um evento `status` por mudança de status, a criação incluída (id do pedido, restaurante,
+  novo status), depois do commit e só para conexões que enxergam aquele restaurante, mais um
+  comentário de sinal de vida a cada 30 segundos. Ela fecha cada conexão aos 100 segundos, antes do
+  limite de 120 da Vercel, e o navegador reconecta.
+- O front fecha a conexão quando a aba vai para segundo plano. Ao voltar, ou ao reconectar, recarrega os
+  pedidos, então nenhum evento perdido deixa a tela errada. Se a API recusar o stream, como com o token
+  de acesso vencido, o front renova a sessão e abre o stream de novo.
 
 ## Fora da primeira versão
 

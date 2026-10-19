@@ -1,6 +1,7 @@
 package io.github.guilhermedkdk.ordertracker.auth;
 
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
+import jakarta.servlet.DispatcherType;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.time.Clock;
@@ -56,7 +57,11 @@ class SecurityConfig {
                 .formLogin(AbstractHttpConfigurer::disable)
                 .logout(AbstractHttpConfigurer::disable)
                 .requestCache(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(requests -> requests.requestMatchers(PublicRoutes.MATCHER)
+                .authorizeHttpRequests(requests -> requests
+                        // The dispatch that ends an SSE stream; the request that opened it was checked.
+                        .dispatcherTypeMatchers(DispatcherType.ASYNC)
+                        .permitAll()
+                        .requestMatchers(PublicRoutes.MATCHER)
                         .permitAll()
                         .anyRequest()
                         .authenticated())

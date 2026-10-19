@@ -62,6 +62,59 @@ export async function api<T>(request: ApiRequest<T>): Promise<T> {
   return request.schema.parse(payload)
 }
 
+/**
+ * Listens to a server-sent event stream on this origin, with the session cookies like any call. The
+ * browser reconnects by itself when the connection falls, and `onReconnect` runs once it is back,
+ * since events may have been missed. When the API refuses the stream, as after the access token
+ * expired, the session is renewed and the stream opens again once. Returns what stops it.
+ */
+export function listen({
+  path,
+  events,
+  onReconnect,
+}: {
+  path: `/${string}`
+  events: Record<string, () => void>
+  onReconnect: () => void
+}): () => void {
+  let source: EventSource | null = null
+  let opened = false
+  let renewed = false
+
+  function connect() {
+    const current = new EventSource(apiUrl(path))
+    source = current
+    current.addEventListener('open', () => {
+      if (opened) {
+        onReconnect()
+      }
+      opened = true
+      renewed = false
+    })
+    for (const [type, handler] of Object.entries(events)) {
+      current.addEventListener(type, handler)
+    }
+    current.addEventListener('error', () => {
+      // A refusal after a fresh renewal is not about the session; trying again would only loop.
+      if (current.readyState !== EventSource.CLOSED || source !== current || renewed) {
+        return
+      }
+      renewed = true
+      void renewSession().then((ok) => {
+        if (ok && source === current) {
+          connect()
+        }
+      })
+    })
+  }
+
+  connect()
+  return () => {
+    source?.close()
+    source = null
+  }
+}
+
 let renewal: Promise<boolean> | null = null
 
 // Requests that fail together wait for the same renewal, so the refresh token turns over once.

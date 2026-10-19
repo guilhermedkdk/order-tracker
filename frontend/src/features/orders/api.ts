@@ -5,9 +5,10 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query'
+import { useEffect } from 'react'
 import { z } from 'zod'
 import { customersKey } from '@/features/customers/api'
-import { api } from '@/lib/http'
+import { api, listen } from '@/lib/http'
 import type { NewOrderBody } from './order-form'
 
 export const orderStatusSchema = z.enum([
@@ -138,6 +139,41 @@ function orderListQuery({ restaurantId, status, page }: OrderListParams) {
     placeholderData: (previous, previousQuery) =>
       previousQuery?.queryKey[2].restaurantId === restaurantId ? previous : undefined,
   })
+}
+
+/**
+ * Keeps the order screens current while the tab is in view: each status change the API streams
+ * reloads the orders. The stream closes while the tab is hidden, and coming back or reconnecting
+ * reloads too, so a change missed in between never stays on screen.
+ */
+export function useOrderUpdates(): void {
+  const queryClient = useQueryClient()
+
+  useEffect(() => {
+    const reload = () => queryClient.invalidateQueries({ queryKey: ordersKey })
+    let stop: (() => void) | null = null
+    const start = () => {
+      stop = listen({ path: '/orders/stream', events: { status: reload }, onReconnect: reload })
+    }
+    const onVisibilityChange = () => {
+      if (document.hidden) {
+        stop?.()
+        stop = null
+      } else if (!stop) {
+        void reload()
+        start()
+      }
+    }
+
+    if (!document.hidden) {
+      start()
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+      stop?.()
+    }
+  }, [queryClient])
 }
 
 /** One order with items and status history, if the user can see it. */

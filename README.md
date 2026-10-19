@@ -30,6 +30,8 @@ leva até um minuto.
   409. Cada mudança entra no histórico com autor e horário.
 - **Lista e busca.** Pedidos do mais novo para o mais antigo, com filtro por restaurante e status,
   paginação e busca por id. Pedido de outro restaurante responde 404, como se não existisse.
+- **Tempo real.** Lista, kanban e detalhe se atualizam sozinhos quando outra pessoa muda um pedido, por
+  SSE, e cada um recebe só os pedidos que enxerga.
 - **Detalhe e kanban.** Cada pedido tem uma página com itens, pagamento e a linha do tempo do status.
   Além da lista, um kanban com uma coluna por status, em que o pedido avança arrastando o card.
 - **Preenchimento automático.** O telefone traz o nome e o último endereço de quem já pediu no
