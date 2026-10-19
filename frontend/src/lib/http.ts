@@ -42,12 +42,46 @@ type ApiRequest<T> = {
 const CSRF_COOKIE = 'XSRF-TOKEN'
 const CSRF_HEADER = 'X-XSRF-TOKEN'
 const UNREACHABLE = 'Não foi possível falar com o servidor. Tente de novo.'
+// Their 401 is about the credentials sent, not an access token that expired.
+const NO_RENEWAL = new Set(['/auth/login', '/auth/signup', '/auth/refresh', '/auth/logout'])
 
 /**
- * Calls the API on this same origin, which keeps the session cookie first-party, and parses the
- * answer with `schema`. Writes carry the CSRF token the API handed out in a cookie.
+ * Calls the API on this same origin, which keeps the session cookies first-party, and parses the
+ * answer with `schema`. Writes carry the CSRF token the API handed out in a cookie. A 401 renews the
+ * session once and repeats the request, so an expired access token never reaches the screen.
  */
-export async function api<T>({ path, method = 'GET', body, schema }: ApiRequest<T>): Promise<T> {
+export async function api<T>(request: ApiRequest<T>): Promise<T> {
+  let response = await send(request)
+  if (response.status === 401 && !NO_RENEWAL.has(request.path) && (await renewSession())) {
+    response = await send(request)
+  }
+  if (!response.ok) {
+    throw await toApiError(response)
+  }
+  const payload: unknown = response.status === 204 ? undefined : await response.json()
+  return request.schema.parse(payload)
+}
+
+let renewal: Promise<boolean> | null = null
+
+// Requests that fail together wait for the same renewal, so the refresh token turns over once.
+function renewSession(): Promise<boolean> {
+  renewal ??= send({ path: '/auth/refresh', method: 'POST' })
+    .then(
+      (response) => response.ok,
+      () => false,
+    )
+    .finally(() => {
+      renewal = null
+    })
+  return renewal
+}
+
+async function send({
+  path,
+  method = 'GET',
+  body,
+}: Omit<ApiRequest<unknown>, 'schema'>): Promise<Response> {
   const headers = new Headers({ Accept: 'application/json' })
   if (body !== undefined) {
     headers.set('Content-Type', 'application/json')
@@ -58,10 +92,8 @@ export async function api<T>({ path, method = 'GET', body, schema }: ApiRequest<
       headers.set(CSRF_HEADER, token)
     }
   }
-
-  let response: Response
   try {
-    response = await fetch(apiUrl(path), {
+    return await fetch(apiUrl(path), {
       method,
       headers,
       body: body === undefined ? undefined : JSON.stringify(body),
@@ -70,12 +102,6 @@ export async function api<T>({ path, method = 'GET', body, schema }: ApiRequest<
   } catch {
     throw new ApiError({ status: 0, message: UNREACHABLE })
   }
-
-  if (!response.ok) {
-    throw await toApiError(response)
-  }
-  const payload: unknown = response.status === 204 ? undefined : await response.json()
-  return schema.parse(payload)
 }
 
 function apiUrl(path: string): URL {

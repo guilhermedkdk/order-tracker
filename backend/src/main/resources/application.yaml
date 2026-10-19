@@ -34,7 +34,8 @@ app:
   auth:
     # Production sets APP_AUTH_JWT_SECRET; blank uses a random key per run.
     jwt-secret: ''
-    session-ttl: 8h
+    access-ttl: 15m
+    refresh-ttl: 7d
     cookie-secure: false
   demo:
     # Public demo accounts and sample orders (docs/SPEC.md). Turn off for a real restaurant.

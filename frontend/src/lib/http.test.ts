@@ -45,6 +45,44 @@ describe('api', () => {
     )
   })
 
+  it('renews an expired session once and repeats every request that failed', async () => {
+    document.cookie = 'XSRF-TOKEN=token-123'
+    let renewals = 0
+    server.use(
+      http.post('/api/auth/refresh', () => {
+        renewals += 1
+        return new HttpResponse(null, { status: 204 })
+      }),
+      http.get('/api/things', () =>
+        renewals > 0
+          ? HttpResponse.json({ name: 'coisa' })
+          : HttpResponse.json({ detail: 'Faça login para continuar.' }, { status: 401 }),
+      ),
+    )
+    const schema = z.object({ name: z.string() })
+
+    const answers = await Promise.all([
+      api({ path: '/things', schema }),
+      api({ path: '/things', schema }),
+    ])
+
+    expect(answers).toEqual([{ name: 'coisa' }, { name: 'coisa' }])
+    expect(renewals).toBe(1)
+  })
+
+  it('answers the 401 when the session cannot be renewed', async () => {
+    document.cookie = 'XSRF-TOKEN=token-123'
+    server.use(
+      http.get('/api/things', () =>
+        HttpResponse.json({ detail: 'Faça login para continuar.' }, { status: 401 }),
+      ),
+    )
+
+    const failure = api({ path: '/things', schema: z.undefined() })
+
+    await expect(failure).rejects.toMatchObject({ status: 401 })
+  })
+
   it('rejects an answer that does not match the expected shape', async () => {
     server.use(http.get('/api/things', () => HttpResponse.json({ unexpected: true })))
 

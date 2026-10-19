@@ -64,6 +64,11 @@ public final class ApiSession {
                 """.formatted(name, email, password));
     }
 
+    /** The value of a cookie this browser holds now, or {@code null}. */
+    public String cookie(String name) {
+        return cookies.get(name);
+    }
+
     public void setCookie(String name, String value) {
         cookies.put(name, value);
     }

@@ -17,8 +17,10 @@ leva até um minuto.
 
 ## O que tem
 
-- **Cadastro, login e sessão.** O JWT fica num cookie httpOnly que o JavaScript da página não lê, com
-  proteção CSRF. Toda rota fora do cadastro, do login e da documentação exige sessão.
+- **Cadastro, login e sessão.** Um JWT de 15 minutos e um refresh token de 7 dias, os dois em cookies
+  httpOnly que o JavaScript da página não lê, com proteção CSRF. Cada renovação troca o refresh token,
+  e um token trocado que reaparece encerra a sessão. Toda rota fora do cadastro, do login, da
+  renovação e da documentação exige sessão.
 - **Restaurantes e papéis.** Quem se cadastra é dono e vê só os próprios restaurantes. O admin vê
   todos. Um seletor no topo troca o restaurante, e a escolha fica na URL.
 - **Pedidos.** Cliente, endereço de entrega, itens, taxa, forma de pagamento com troco e observações.

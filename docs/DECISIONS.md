@@ -3,6 +3,19 @@
 Log append-only, com a entrada mais nova no topo. Cada entrada registra o que uma sessão futura faria
 errado sem ela.
 
+### 2026-10-19 - Refresh token com rotação e 30 segundos de tolerância
+
+**Armadilha:** com rotação estrita, duas abas que renovam juntas derrubam a sessão: o cookie é um só,
+e a aba de trás chega com o token que a da frente acabou de trocar. Devolver a ela um token novo
+também não serve, porque abriria uma segunda linha de tokens válidos. E o validador de JWT do Spring
+lê a expiração no relógio do sistema, não no `Clock` da aplicação, então adiantar o relógio no teste
+não vencia o token.
+**Regra:** um token trocado há menos de 30 segundos renova só o acesso, sem refresh token novo, porque
+o navegador já guardou o que a primeira aba recebeu. Depois disso, o reuso revoga a família inteira.
+A troca é um `update ... where rotated_at is null`, então duas renovações simultâneas não rodam as
+duas. O `JwtTimestampValidator` recebe o `Clock` da aplicação.
+**Onde:** `backend/.../auth/RefreshTokens.java`, `Sessions.java`, `SecurityConfig.java`.
+
 ### 2026-10-19 - Swagger anuncia o servidor como "/"
 
 **Armadilha:** em produção, o proxy do Render entrega à API o próprio host, não o da Vercel, e a Vercel

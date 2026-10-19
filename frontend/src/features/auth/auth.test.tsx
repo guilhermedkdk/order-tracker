@@ -16,6 +16,28 @@ describe('authentication', () => {
     expect(await screen.findByRole('heading', { name: 'Entrar' })).toBeInTheDocument()
   })
 
+  it('keeps the person signed in when the access token expired', async () => {
+    let renewed = false
+    server.use(
+      http.get('/api/auth/me', () =>
+        renewed
+          ? HttpResponse.json(ana)
+          : HttpResponse.json({ detail: 'Faça login para continuar.' }, { status: 401 }),
+      ),
+      http.post('/api/auth/refresh', () => {
+        renewed = true
+        return new HttpResponse(null, { status: 204 })
+      }),
+      noRestaurants,
+    )
+
+    renderAt('/')
+
+    expect(
+      await screen.findByRole('heading', { name: 'Crie seu primeiro restaurante' }),
+    ).toBeInTheDocument()
+  })
+
   it('offers to try again when the server does not answer', async () => {
     let up = false
     server.use(

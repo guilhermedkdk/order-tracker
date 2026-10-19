@@ -12,9 +12,9 @@ import jakarta.validation.constraints.Size;
 import java.net.URI;
 import java.util.Locale;
 import java.util.UUID;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -42,9 +42,7 @@ class AuthController {
     ResponseEntity<UserResponse> signup(@Valid @RequestBody SignupRequest request) {
         User user = auth.signup(request.name(), request.email(), request.password());
         return ResponseEntity.created(URI.create("/api/auth/me"))
-                .header(
-                        HttpHeaders.SET_COOKIE,
-                        sessions.open(user.toCurrentUser()).toString())
+                .headers(sessions.open(user.toCurrentUser()))
                 .body(UserResponse.of(user));
     }
 
@@ -54,20 +52,24 @@ class AuthController {
     @PostMapping("/login")
     ResponseEntity<UserResponse> login(@Valid @RequestBody LoginRequest request) {
         User user = auth.login(request.email(), request.password());
-        return ResponseEntity.ok()
-                .header(
-                        HttpHeaders.SET_COOKIE,
-                        sessions.open(user.toCurrentUser()).toString())
-                .body(UserResponse.of(user));
+        return ResponseEntity.ok().headers(sessions.open(user.toCurrentUser())).body(UserResponse.of(user));
     }
 
-    @Operation(summary = "Fecha a sessão")
+    @Operation(
+            summary = "Renova a sessão",
+            description = "Troca o refresh token do cookie por um novo e entrega um token de acesso novo.")
+    @ApiResponse(responseCode = "204", description = "Sessão renovada")
+    @ApiResponse(responseCode = "401", description = "Refresh token ausente, vencido ou revogado")
+    @PostMapping("/refresh")
+    ResponseEntity<Void> refresh(@CookieValue(name = Sessions.REFRESH_COOKIE, required = false) String refreshToken) {
+        return ResponseEntity.noContent().headers(sessions.renew(refreshToken)).build();
+    }
+
+    @Operation(summary = "Fecha a sessão", description = "Revoga o refresh token e apaga os cookies.")
     @ApiResponse(responseCode = "204", description = "Sessão fechada")
     @PostMapping("/logout")
-    ResponseEntity<Void> logout() {
-        return ResponseEntity.noContent()
-                .header(HttpHeaders.SET_COOKIE, sessions.close().toString())
-                .build();
+    ResponseEntity<Void> logout(@CookieValue(name = Sessions.REFRESH_COOKIE, required = false) String refreshToken) {
+        return ResponseEntity.noContent().headers(sessions.close(refreshToken)).build();
     }
 
     @Operation(summary = "Usuário da sessão")

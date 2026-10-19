@@ -17,7 +17,7 @@ Cada linha só é marcada quando o teste que a prova existe e passa.
 | - | --------- | --------------- | ----- |
 | [x] | Cadastro com nome, e-mail e senha | `POST /api/auth/signup` | `AuthApiTests`, `auth.test.tsx` |
 | [x] | Login com e-mail e senha | `POST /api/auth/login`, sessão em cookie | `AuthApiTests`, `auth.test.tsx` |
-| [x] | Só usuários autenticados acessam | Toda rota fora do cadastro, do login, do logout e da documentação responde 401 sem sessão; o front redireciona para `/entrar` | `AuthApiTests`, `auth.test.tsx` |
+| [x] | Só usuários autenticados acessam | Toda rota fora do cadastro, do login, da renovação, do logout e da documentação responde 401 sem sessão; o front redireciona para `/entrar` | `AuthApiTests`, `SessionRenewalTests`, `auth.test.tsx` |
 | [x] | Criar pedido (cliente, itens, endereço) | `POST /api/orders` | `OrderApiTests` |
 | [x] | Atualizar o status (`RECEBIDO`, `EM_PREPARO`, `SAIU_PARA_ENTREGA`, `ENTREGUE`, `CANCELADO`) | `PATCH /api/orders/{id}/status`, com as regras de transição | `OrderTests`, `OrderApiTests` |
 | [x] | Listar todos os pedidos e buscar por ID | `GET /api/orders`, `GET /api/orders/{id}` | `OrderApiTests` |
@@ -39,10 +39,15 @@ Cada linha só é marcada quando o teste que a prova existe e passa.
   "E-mail já cadastrado"). Senha: 8 a 72 caracteres, porque o BCrypt ignora o que passa de 72 bytes.
 - Cadastro já deixa a pessoa logada. Login errado responde 401 com uma mensagem só, sem dizer se o
   e-mail existe.
-- **Fase 1:** um JWT de 8 horas num cookie httpOnly `SameSite=Lax` (`Secure` em produção), CSRF com o
-  token em cookie legível e devolvido no header `X-XSRF-TOKEN`. Logout apaga o cookie.
-- **Fase 3:** JWT de 15 minutos mais refresh token de 7 dias com rotação, guardado como hash no banco,
-  com uma janela curta de tolerância para abas que renovam ao mesmo tempo. Logout revoga o refresh token.
+- A sessão é um JWT de 15 minutos num cookie httpOnly `SameSite=Lax` e um refresh token de 7 dias num
+  cookie httpOnly `SameSite=Strict` que só `/api/auth` recebe, os dois `Secure` em produção. O banco
+  guarda só o hash do refresh token. CSRF com o token em cookie legível e devolvido no header
+  `X-XSRF-TOKEN`.
+- Renovar troca o refresh token por outro da mesma sessão. Um token trocado há menos de 30 segundos
+  ainda renova o acesso, para abas que renovam ao mesmo tempo; usado depois disso, ele encerra a sessão
+  inteira, porque só uma cópia explica o reuso. Sem uso por 7 dias, a sessão acaba.
+- O front, ao receber 401, renova a sessão uma vez e repete a chamada; se não der, vai para o login.
+- Sair revoga o refresh token e apaga os dois cookies.
 
 ## Pedido
 
@@ -84,7 +89,8 @@ Cada linha só é marcada quando o teste que a prova existe e passa.
 | ------------- | --- |
 | `POST /api/auth/signup` | Cadastra um dono e abre a sessão. 201. |
 | `POST /api/auth/login` | Abre a sessão. 200. |
-| `POST /api/auth/logout` | Fecha a sessão. 204. |
+| `POST /api/auth/refresh` | Renova a sessão com o refresh token do cookie. 204, ou 401. |
+| `POST /api/auth/logout` | Fecha a sessão e revoga o refresh token. 204. |
 | `GET /api/auth/me` | O usuário da sessão: id, nome, e-mail, papel e se é conta demo. |
 | `GET /api/restaurants` | Restaurantes visíveis; para o admin, com o nome do dono. |
 | `POST /api/restaurants` | Cria um restaurante do dono da sessão. 201. |
