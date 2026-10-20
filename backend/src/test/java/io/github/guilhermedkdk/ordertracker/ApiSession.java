@@ -57,11 +57,26 @@ public final class ApiSession {
         return send(mvc.patch().uri(uri).contentType(MediaType.APPLICATION_JSON).content(json), true);
     }
 
+    /**
+     * Opens a server-sent event stream as {@code EventSource} does and returns at once; what the API
+     * sends later keeps arriving in the body of the result.
+     */
+    public MvcTestResult openStream(String uri) {
+        MockMvcRequestBuilder request = mvc.get().uri(uri).accept(MediaType.TEXT_EVENT_STREAM);
+        cookies.forEach((name, value) -> request.cookie(new Cookie(name, value)));
+        return request.asyncExchange();
+    }
+
     /** Signs up a new owner and keeps the session. */
     public MvcTestResult signup(String name, String email, String password) {
         return post("/api/auth/signup", """
                 {"name": "%s", "email": "%s", "password": "%s"}
                 """.formatted(name, email, password));
+    }
+
+    /** The value of a cookie this browser holds now, or {@code null}. */
+    public String cookie(String name) {
+        return cookies.get(name);
     }
 
     public void setCookie(String name, String value) {

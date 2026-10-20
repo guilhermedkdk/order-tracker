@@ -16,8 +16,10 @@ WORKDIR /app
 RUN useradd --system --uid 1001 app
 COPY --from=build /workspace/app.jar app.jar
 USER app
-# Inside a container the API must listen on every interface (docs/DECISIONS.md).
+# Inside a container the API must listen on every interface (docs/DECISIONS.md). The free Render
+# instance has a tenth of a CPU, so the JIT stops at C1 and the GC is the serial one: both spend less
+# of it while the API wakes up.
 ENV SERVER_ADDRESS=0.0.0.0 \
-    JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75"
+    JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75 -XX:TieredStopAtLevel=1 -XX:+UseSerialGC"
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]

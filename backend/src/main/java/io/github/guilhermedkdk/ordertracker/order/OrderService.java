@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -27,12 +28,19 @@ public class OrderService {
     private final OrderRepository orders;
     private final RestaurantService restaurants;
     private final CustomerBook customers;
+    private final ApplicationEventPublisher events;
     private final Clock clock;
 
-    OrderService(OrderRepository orders, RestaurantService restaurants, CustomerBook customers, Clock clock) {
+    OrderService(
+            OrderRepository orders,
+            RestaurantService restaurants,
+            CustomerBook customers,
+            ApplicationEventPublisher events,
+            Clock clock) {
         this.orders = orders;
         this.restaurants = restaurants;
         this.customers = customers;
+        this.events = events;
         this.clock = clock;
     }
 
@@ -50,6 +58,7 @@ public class OrderService {
     public Order save(Order order) {
         Order saved = orders.save(order);
         rememberCustomer(saved);
+        events.publishEvent(OrderStatusChanged.of(saved));
         return saved;
     }
 
@@ -62,7 +71,9 @@ public class OrderService {
     public OrderView changeStatus(CurrentUser user, UUID id, OrderStatus target, Cancellation cancellation) {
         Order order = visibleOrder(user, id);
         order.changeStatus(target, cancellation, authorOf(user), clock.instant());
-        return view(orders.saveAndFlush(order));
+        Order saved = orders.saveAndFlush(order);
+        events.publishEvent(OrderStatusChanged.of(saved));
+        return view(saved);
     }
 
     /** Newest first. Filtering by a restaurant the user cannot see answers 404, like any other access. */

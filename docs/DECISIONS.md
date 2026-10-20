@@ -3,6 +3,67 @@
 Log append-only, com a entrada mais nova no topo. Cada entrada registra o que uma sessão futura faria
 errado sem ela.
 
+### 2026-10-19 - Sessão revogada vale para a família inteira de tokens
+
+**Armadilha:** revogar só os tokens que já existem deixa escapar o sucessor gravado por uma renovação
+que corria junto com o "Sair" ou com a detecção de reuso, e a pessoa seguia logada depois de sair. E
+montar o validador do JWT à mão tirou as checagens padrão do Spring Security 7, como a do header `typ`.
+**Regra:** uma família com qualquer token revogado não renova mais, e a troca só acontece em token não
+revogado. Entrar de novo revoga a sessão que o navegador já tinha, e uma renovação recusada apaga os
+dois cookies. O validador parte de `JwtValidators.createDefaultWithValidators`. Tokens vencidos ficam
+no banco, porque restaurar a demonstração é a única exclusão do sistema. Uma resposta de renovação
+perdida depois do commit deixa o navegador com o token trocado e, depois de 30 s, pede login de novo:
+aceitar o token trocado fora da janela tiraria a detecção de cópia.
+**Onde:** `backend/.../auth/RefreshTokens.java`, `Sessions.java`, `SecurityConfig.java`.
+
+### 2026-10-19 - JVM ajustada para acordar com um décimo de CPU
+
+**Armadilha:** a instância gratuita do Render tem 0,1 CPU, e a partida da API é quase toda CPU: JIT e
+coletor de memória disputam o pouco que há. Com 0,1 CPU e 512 MB, a API subia em 157 s, acima dos
+120 s que a Vercel espera.
+**Regra:** a imagem roda com `-XX:TieredStopAtLevel=1 -XX:+UseSerialGC`, que na mesma medição subiu em
+89 s. A API perde pico de desempenho, que esta demo não usa. Tirar essas opções devolve a partida aos
+157 s.
+**Onde:** `backend/Dockerfile`.
+
+### 2026-10-19 - Escrita sem token CSRF não sai do navegador
+
+**Armadilha:** o Render gratuito levou 83 s para acordar numa medição, perto dos 120 s que a Vercel
+espera. Quando passa, a busca do cookie de CSRF em `/api/auth/me` volta sem cookie, e o login saía
+sem o token: a API respondia "Token CSRF ausente", uma mensagem que ninguém consegue resolver.
+**Regra:** `http.ts` não envia escrita sem o token CSRF. Sem ele, responde que não conseguiu falar com o
+servidor, e a próxima tentativa, com a API já acordada, funciona. As telas avisam que acordar leva um
+ou dois minutos. Os testes começam com o cookie `XSRF-TOKEN` já definido, porque o MSW não grava cookie.
+**Onde:** `frontend/src/lib/http.ts`, `frontend/src/test/setup.ts`.
+
+### 2026-10-19 - Stream de pedidos que reconecta a cada 100 segundos
+
+**Armadilha:** a Vercel corta qualquer requisição repassada aos 120 s, e um `SseEmitter` sem prazo
+próprio usa o do servidor, de 30 s no Tomcat. O despacho assíncrono que encerra o stream passa de novo
+pela segurança, quando o token de acesso pode já ter vencido. E o `EventSource` não renova sessão:
+uma resposta 401 fecha o stream de vez.
+**Regra:** o emissor vive 100 s, o navegador reconecta e cada reconexão recarrega os pedidos. A
+segurança libera o despacho `ASYNC`. O escopo vale do momento da conexão até a próxima, então um
+restaurante novo passa a chegar em até 100 s. O `EventSource` fica em `lib/http.ts`, que, quando o
+stream é recusado, renova a sessão e abre de novo, esperando de 1 s a 30 s, cada vez mais: um 502 de
+API reiniciando não pode encerrar o tempo real. Eventos em rajada recarregam a tela uma vez, 300 ms
+depois do último.
+**Onde:** `backend/.../live/OrderStream.java`, `backend/.../auth/SecurityConfig.java`,
+`frontend/src/lib/http.ts`.
+
+### 2026-10-19 - Refresh token com rotação e 30 segundos de tolerância
+
+**Armadilha:** com rotação estrita, duas abas que renovam juntas derrubam a sessão: o cookie é um só,
+e a aba de trás chega com o token que a da frente acabou de trocar. Devolver a ela um token novo
+também não serve, porque abriria uma segunda linha de tokens válidos. E o validador de JWT do Spring
+lê a expiração no relógio do sistema, não no `Clock` da aplicação, então adiantar o relógio no teste
+não vencia o token.
+**Regra:** um token trocado há menos de 30 segundos renova só o acesso, sem refresh token novo, porque
+o navegador já guardou o que a primeira aba recebeu. Depois disso, o reuso revoga a família inteira.
+A troca é um `update ... where rotated_at is null`, então duas renovações simultâneas não rodam as
+duas. O `JwtTimestampValidator` recebe o `Clock` da aplicação.
+**Onde:** `backend/.../auth/RefreshTokens.java`, `Sessions.java`, `SecurityConfig.java`.
+
 ### 2026-10-19 - Swagger anuncia o servidor como "/"
 
 **Armadilha:** em produção, o proxy do Render entrega à API o próprio host, não o da Vercel, e a Vercel
@@ -17,7 +78,7 @@ Vercel, o Compose ou a máquina local. Isso tira do `X-Forwarded-Host` o papel q
 
 **Armadilha:** parece que a primeira visita depois do repouso do Render daria erro, e que valeria
 criar repetições automáticas no front. Não é preciso: a Vercel espera até 120 s pela resposta de um
-rewrite, e o Render acorda em menos de um minuto, então a tela "Carregando…" cobre a espera.
+rewrite, e o Render costuma acordar antes disso, então a tela "Carregando…" cobre a espera.
 **Regra:** `frontend/vercel.json` repassa `/api` e o Swagger ao Render, como o nginx faz no Compose, e é
 o único lugar com o endereço do Render. A tela de servidor fora do ar só aparece quando a API não
 responde de fato, com um botão para tentar de novo. Um `/:path*` da Vercel também casa o caminho sem

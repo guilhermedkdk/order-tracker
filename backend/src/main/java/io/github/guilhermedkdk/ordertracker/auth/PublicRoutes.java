@@ -14,6 +14,7 @@ final class PublicRoutes {
     static final RequestMatcher MATCHER = new OrRequestMatcher(
             PATHS.matcher(HttpMethod.POST, "/api/auth/signup"),
             PATHS.matcher(HttpMethod.POST, "/api/auth/login"),
+            PATHS.matcher(HttpMethod.POST, "/api/auth/refresh"),
             PATHS.matcher(HttpMethod.POST, "/api/auth/logout"),
             PATHS.matcher("/actuator/health"),
             PATHS.matcher("/error"),

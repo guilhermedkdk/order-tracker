@@ -5,9 +5,10 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query'
+import { useEffect } from 'react'
 import { z } from 'zod'
 import { customersKey } from '@/features/customers/api'
-import { api } from '@/lib/http'
+import { api, listen } from '@/lib/http'
 import type { NewOrderBody } from './order-form'
 
 export const orderStatusSchema = z.enum([
@@ -89,6 +90,7 @@ export type Order = z.infer<typeof orderSchema>
 export type OrderActionTarget = Pick<OrderSummary, 'id' | 'code' | 'allowedNextStatuses'>
 
 const ordersKey = ['orders'] as const
+const RELOAD_DELAY_MS = 300
 
 type OrderListParams = { restaurantId?: string; status?: OrderStatus; page: number }
 
@@ -138,6 +140,50 @@ function orderListQuery({ restaurantId, status, page }: OrderListParams) {
     placeholderData: (previous, previousQuery) =>
       previousQuery?.queryKey[2].restaurantId === restaurantId ? previous : undefined,
   })
+}
+
+/**
+ * Keeps the order screens current while the tab is in view: each status change the API streams
+ * reloads the orders. The stream closes while the tab is hidden, and coming back or reconnecting
+ * reloads too, so a change missed in between never stays on screen.
+ */
+export function useOrderUpdates(): void {
+  const queryClient = useQueryClient()
+
+  useEffect(() => {
+    let pending: ReturnType<typeof setTimeout> | undefined
+    // A burst of changes, like restoring the demo, reloads once.
+    const reload = () => {
+      clearTimeout(pending)
+      pending = setTimeout(
+        () => void queryClient.invalidateQueries({ queryKey: ordersKey }),
+        RELOAD_DELAY_MS,
+      )
+    }
+    let stop: (() => void) | null = null
+    const start = () => {
+      stop = listen({ path: '/orders/stream', events: { status: reload }, onReconnect: reload })
+    }
+    const onVisibilityChange = () => {
+      if (document.hidden) {
+        stop?.()
+        stop = null
+      } else if (!stop) {
+        reload()
+        start()
+      }
+    }
+
+    if (!document.hidden) {
+      start()
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+      clearTimeout(pending)
+      stop?.()
+    }
+  }, [queryClient])
 }
 
 /** One order with items and status history, if the user can see it. */
