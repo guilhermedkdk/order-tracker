@@ -23,6 +23,11 @@ Usuário criado pelo cadastro público, dono de um ou mais restaurantes. Vê e a
 seus restaurantes.
 _Evite_: proprietário, lojista, gerente, owner
 
+**Sessão** (`Sessions`):
+O tempo em que um usuário fica dentro do sistema depois de entrar. Dura enquanto ele usar o sistema
+ao menos uma vez a cada sete dias, e termina quando ele sai.
+_Evite_: login (para o período; login é o ato de entrar), conexão
+
 **Pedido visível**:
 Para um dono, um pedido de um dos seus restaurantes; para o admin, qualquer pedido. Um pedido que não
 é visível não existe para aquele usuário.

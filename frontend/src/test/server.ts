@@ -6,6 +6,10 @@ import { setupServer } from 'msw/node'
  * ones here are the defaults left after each reset.
  */
 export const server = setupServer(
+  // A request answered with 401 tries to renew the session; by default there is none to renew.
+  http.post('/api/auth/refresh', () =>
+    HttpResponse.json({ detail: 'Faça login para continuar.' }, { status: 401 }),
+  ),
   // Typing a phone in the order form looks the customer up; by default nobody is known.
   http.get('/api/customers', () =>
     HttpResponse.json({ detail: 'Cliente não encontrado.' }, { status: 404 }),

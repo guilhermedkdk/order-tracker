@@ -42,26 +42,120 @@ type ApiRequest<T> = {
 const CSRF_COOKIE = 'XSRF-TOKEN'
 const CSRF_HEADER = 'X-XSRF-TOKEN'
 const UNREACHABLE = 'Não foi possível falar com o servidor. Tente de novo.'
+const STREAM_RETRY_FIRST_MS = 1000
+const STREAM_RETRY_MAX_MS = 30_000
+// Their 401 is about the credentials sent, not an access token that expired.
+const NO_RENEWAL = new Set(['/auth/login', '/auth/signup', '/auth/refresh', '/auth/logout'])
 
 /**
- * Calls the API on this same origin, which keeps the session cookie first-party, and parses the
- * answer with `schema`. Writes carry the CSRF token the API handed out in a cookie.
+ * Calls the API on this same origin, which keeps the session cookies first-party, and parses the
+ * answer with `schema`. Writes carry the CSRF token the API handed out in a cookie. A 401 renews the
+ * session once and repeats the request, so an expired access token never reaches the screen.
  */
-export async function api<T>({ path, method = 'GET', body, schema }: ApiRequest<T>): Promise<T> {
+export async function api<T>(request: ApiRequest<T>): Promise<T> {
+  let response = await send(request)
+  if (response.status === 401 && !NO_RENEWAL.has(request.path) && (await renewSession())) {
+    response = await send(request)
+  }
+  if (!response.ok) {
+    throw await toApiError(response)
+  }
+  const payload: unknown = response.status === 204 ? undefined : await response.json()
+  return request.schema.parse(payload)
+}
+
+/**
+ * Listens to a server-sent event stream on this origin, with the session cookies like any call. The
+ * browser reconnects by itself when the connection falls, and `onReconnect` runs once it is back,
+ * since events may have been missed. When the API refuses the stream, as after the access token
+ * expired or while it restarts, the session is renewed and the stream opens again, a little later
+ * each time. Returns what stops it.
+ */
+export function listen({
+  path,
+  events,
+  onReconnect,
+}: {
+  path: `/${string}`
+  events: Record<string, () => void>
+  onReconnect: () => void
+}): () => void {
+  let source: EventSource | null = null
+  let retry: ReturnType<typeof setTimeout> | undefined
+  let opened = false
+  let refusals = 0
+
+  function connect() {
+    const current = new EventSource(apiUrl(path))
+    source = current
+    current.addEventListener('open', () => {
+      if (opened) {
+        onReconnect()
+      }
+      opened = true
+      refusals = 0
+    })
+    for (const [type, handler] of Object.entries(events)) {
+      current.addEventListener(type, handler)
+    }
+    current.addEventListener('error', () => {
+      // The browser retries a dropped connection by itself, but never a refused one.
+      if (current.readyState !== EventSource.CLOSED || source !== current) {
+        return
+      }
+      const wait = Math.min(STREAM_RETRY_MAX_MS, STREAM_RETRY_FIRST_MS * 2 ** refusals)
+      refusals += 1
+      void renewSession().then(() => {
+        if (source === current) {
+          retry = setTimeout(connect, wait)
+        }
+      })
+    })
+  }
+
+  connect()
+  return () => {
+    clearTimeout(retry)
+    source?.close()
+    source = null
+  }
+}
+
+let renewal: Promise<boolean> | null = null
+
+// Requests that fail together wait for the same renewal, so the refresh token turns over once.
+function renewSession(): Promise<boolean> {
+  renewal ??= send({ path: '/auth/refresh', method: 'POST' })
+    .then(
+      (response) => response.ok,
+      () => false,
+    )
+    .finally(() => {
+      renewal = null
+    })
+  return renewal
+}
+
+async function send({
+  path,
+  method = 'GET',
+  body,
+}: Omit<ApiRequest<unknown>, 'schema'>): Promise<Response> {
   const headers = new Headers({ Accept: 'application/json' })
   if (body !== undefined) {
     headers.set('Content-Type', 'application/json')
   }
   if (method !== 'GET') {
     const token = await csrfToken()
-    if (token) {
-      headers.set(CSRF_HEADER, token)
+    // No token means the API never answered, as on a cold start past the proxy's limit. Sending the
+    // write anyway would only earn a CSRF refusal nobody can act on.
+    if (!token) {
+      throw new ApiError({ status: 0, message: UNREACHABLE })
     }
+    headers.set(CSRF_HEADER, token)
   }
-
-  let response: Response
   try {
-    response = await fetch(apiUrl(path), {
+    return await fetch(apiUrl(path), {
       method,
       headers,
       body: body === undefined ? undefined : JSON.stringify(body),
@@ -70,12 +164,6 @@ export async function api<T>({ path, method = 'GET', body, schema }: ApiRequest<
   } catch {
     throw new ApiError({ status: 0, message: UNREACHABLE })
   }
-
-  if (!response.ok) {
-    throw await toApiError(response)
-  }
-  const payload: unknown = response.status === 204 ? undefined : await response.json()
-  return schema.parse(payload)
 }
 
 function apiUrl(path: string): URL {
