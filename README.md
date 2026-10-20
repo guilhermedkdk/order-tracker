@@ -10,10 +10,10 @@ TypeScript e banco Postgres.
 
 ## Demo
 
-**https://order-tracker-iota-ruddy.vercel.app**
+**https://order-tracker-guilherme.vercel.app**
 
 Na tela de login, use "Entrar como dono" ou "Entrar como admin". A documentação da API fica em
-[/swagger-ui.html](https://order-tracker-iota-ruddy.vercel.app/swagger-ui.html). A API roda no plano
+[/swagger-ui.html](https://order-tracker-guilherme.vercel.app/swagger-ui.html). A API roda no plano
 gratuito do Render e dorme depois de uns 15 minutos sem acesso, então o primeiro acesso depois disso
 pode levar um ou dois minutos.
 
