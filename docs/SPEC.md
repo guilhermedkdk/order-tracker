@@ -186,4 +186,4 @@ Cada fase é uma branch com um PR para `main`, revisado com `/code-review` antes
 
 1. Refresh token com rotação, a segunda fase da autenticação.
 2. Tempo real por SSE.
-3. README final: prints, diagrama e "Como usei IA".
+3. README final: prints e diagramas.

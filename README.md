@@ -218,36 +218,6 @@ de cada passo no histórico:
 3. **Extras** ([PR #6](https://github.com/guilhermedkdk/order-tracker/pull/6)): refresh token com
    rotação, tempo real por SSE e este README.
 
-## Como usei IA
-
-Construí o projeto em par com o Claude Code, um agente de IA que trabalha no terminal. Eu decidi o
-que construir e revisei cada passo; o agente escreveu a maior parte do código, dos testes e dos
-documentos. O que fez a diferença foi o processo em volta:
-
-- **Uma entrevista antes do código.** O agente me fez perguntas sobre cada ponto aberto do enunciado
-  (papéis, sessão, banco, o que entra em cada fase) até as decisões ficarem claras. As respostas
-  viraram o [SPEC](docs/SPEC.md), o [glossário](docs/GLOSSARY.md), a
-  [arquitetura](docs/ARCHITECTURE.md) e as primeiras [decisões](docs/DECISIONS.md).
-- **Regras que valem em toda sessão.** O [CLAUDE.md](CLAUDE.md) guarda o que nenhuma mudança quebra,
-  como "as transições vivem só em `Order`" e "visibilidade sai só do `RestaurantScope`", e o agente o
-  lê antes de qualquer tarefa.
-- **Teste antes da implementação.** Cada regra começou por um teste que falhava. Quando um teste veio
-  depois do código, o agente quebrou o código de propósito para provar que o teste pegava a falha.
-- **Revisão antes de cada merge de fase.** Um segundo agente revisou o PR de cada fase procurando bugs:
-  foram 10 achados na fase 1, 15 na fase 2 e 13 na fase 3. Cada um foi corrigido antes do merge, com
-  teste de regressão quando dava para reproduzir pela API, menos um da fase 3, deixado de fora com o
-  motivo registrado.
-- **Conferência fora dos testes.** As telas foram abertas no navegador, e a demo publicada foi
-  percorrida pela Vercel. Isso achou três problemas que os testes não viam: o Swagger sem a definição
-  da API, o "Try it out" chamando o Render direto e o login sem token CSRF enquanto a API acordava.
-- **O que ficou comigo.** As decisões de produto e de escopo, as contas no Neon, no Render e na Vercel
-  (nenhuma senha passou pelo agente), a aprovação de cada merge e a revisão do histórico.
-
-A IA também errou, e o processo pegou: o arrasto do kanban disparava de dentro do diálogo de
-cancelamento, corrigir o telefone no novo pedido mantinha os dados do cliente anterior, e a estimativa
-do tempo de partida da API no Render estava otimista. As armadilhas desse tipo ficaram registradas no
-[DECISIONS.md](docs/DECISIONS.md).
-
 ## Fora do escopo
 
 De propósito, para não abrir regras que ninguém pediu: edição de pedido depois de criado, exclusão de
